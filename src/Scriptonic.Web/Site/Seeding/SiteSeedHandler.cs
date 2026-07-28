@@ -400,6 +400,12 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         bool Exists(string alias, string? name = null) => children.Any(c =>
             c.ContentType.Alias == alias && (name is null || c.Name == name));
 
+        // A node created by an interrupted boot may exist unpublished; finish the job.
+        foreach (IContent child in children.Where(c => !c.Published))
+        {
+            SavePublish(child);
+        }
+
         // Diensten
         if (!Exists(SiteAliases.Diensten))
         {

@@ -6,8 +6,9 @@
     string title = ViewData["Title"] is string t && !string.IsNullOrEmpty(t)
         ? $"{t} — Scriptonic"
         : "Scriptonic — websites, games & maatwerk software";
-    string metaDescription = ViewData["MetaDescription"] as string
-        ?? "Scriptonic bouwt moderne websites, webapplicaties en games. Van ontwerp tot hosting en beheer — software met karakter.";
+    string metaDescription = ViewData["MetaDescription"] is string md && !string.IsNullOrWhiteSpace(md)
+        ? md
+        : "Scriptonic bouwt moderne websites, webapplicaties en games. Van ontwerp tot hosting en beheer — software met karakter.";
     string canonicalPath = Context.Request.Path.HasValue ? Context.Request.Path.Value! : "/";
 }
 <!DOCTYPE html>

@@ -4,7 +4,7 @@
     var portalUser = (PortalUser)ViewData["PortalUser"]!;
     var outstanding = ViewData["Outstanding"] as IReadOnlyList<EboekOutstandingInvoice> ?? [];
     var invoices = ViewData["Invoices"] as IReadOnlyList<EboekInvoice> ?? [];
-    var offertes = ViewData["Offertes"] as IReadOnlyList<IPublishedContent> ?? [];
+    var offertes = ViewData["Offertes"] as IReadOnlyList<OfferteInfo> ?? [];
     decimal openTotal = outstanding.Sum(o => o.OutstandingAmount ?? 0);
 }
 

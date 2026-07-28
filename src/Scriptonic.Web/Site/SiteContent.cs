@@ -63,7 +63,7 @@ public class SiteContentService
     }
 
     /// <summary>Offertes (CMS-managed quotes) for one e-Boekhouden relation code.</summary>
-    public IReadOnlyList<IPublishedContent> GetOffertes(string relationCode)
+    public IReadOnlyList<OfferteInfo> GetOffertes(string relationCode)
     {
         if (string.IsNullOrWhiteSpace(relationCode))
         {
@@ -78,6 +78,26 @@ public class SiteContentService
                 .Where(c => c.ContentType.Alias == SiteAliases.Offerte
                     && string.Equals(c.Value<string>("relationCode"), relationCode, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(c => c.Value<DateTime>("offerteDate"))
+                .Select(c => new OfferteInfo(
+                    c.Name,
+                    c.Value<string>("offerteNumber") ?? "",
+                    c.Value<DateTime>("offerteDate") is var d && d != default ? d : null,
+                    c.Value<DateTime>("validUntil") is var v && v != default ? v : null,
+                    c.Value<decimal>("amount"),
+                    c.Value<string>("status") ?? "Open",
+                    c.Value<string>("description") ?? "",
+                    c.Value<IEnumerable<IPublishedContent>>("pdf")?.FirstOrDefault()?.Url()))
                 .ToList();
     }
 }
+
+/// <summary>Offerte data resolved inside an Umbraco context, safe to render anywhere.</summary>
+public record OfferteInfo(
+    string Name,
+    string Number,
+    DateTime? Date,
+    DateTime? ValidUntil,
+    decimal Amount,
+    string Status,
+    string Description,
+    string? PdfUrl);

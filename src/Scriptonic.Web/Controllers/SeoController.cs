@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Scriptonic.Web.Site;
 using Umbraco.Cms.Core.Models.PublishedContent;
+using Umbraco.Cms.Core.Web;
 using Umbraco.Extensions;
 
 namespace Scriptonic.Web.Controllers;
@@ -11,11 +12,13 @@ namespace Scriptonic.Web.Controllers;
 public class SeoController : Controller
 {
     private readonly SiteContentService _siteContent;
+    private readonly IUmbracoContextFactory _umbracoContextFactory;
     private readonly SiteOptions _options;
 
-    public SeoController(SiteContentService siteContent, IOptions<SiteOptions> options)
+    public SeoController(SiteContentService siteContent, IUmbracoContextFactory umbracoContextFactory, IOptions<SiteOptions> options)
     {
         _siteContent = siteContent;
+        _umbracoContextFactory = umbracoContextFactory;
         _options = options.Value;
     }
 
@@ -27,6 +30,8 @@ public class SeoController : Controller
         sb.AppendLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
         sb.AppendLine("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">");
 
+        // Url() needs an ambient UmbracoContext; this is a plain MVC route.
+        using var ctx = _umbracoContextFactory.EnsureUmbracoContext();
         IPublishedContent? home = _siteContent.GetHome();
         if (home is not null)
         {

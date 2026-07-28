@@ -1,7 +1,7 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Offertes";
-    var offertes = ViewData["Offertes"] as IReadOnlyList<IPublishedContent> ?? [];
+    var offertes = ViewData["Offertes"] as IReadOnlyList<OfferteInfo> ?? [];
     var nl = new System.Globalization.CultureInfo("nl-NL");
 }
 
@@ -20,40 +20,38 @@
         <div class="mt-8 grid gap-6 md:grid-cols-2">
             @foreach (var offerte in offertes)
             {
-                string status = offerte.Value<string>("status") ?? "Open";
-                string statusClass = status.Equals("Geaccepteerd", StringComparison.OrdinalIgnoreCase)
+                string statusClass = offerte.Status.Equals("Geaccepteerd", StringComparison.OrdinalIgnoreCase)
                     ? "bg-emerald-100 text-emerald-800"
-                    : status.Equals("Verlopen", StringComparison.OrdinalIgnoreCase)
+                    : offerte.Status.Equals("Verlopen", StringComparison.OrdinalIgnoreCase)
                         ? "bg-gray-200 text-gray-600"
                         : "bg-amber-100 text-amber-800";
-                var pdf = offerte.Value<IEnumerable<IPublishedContent>>("pdf")?.FirstOrDefault();
                 <div class="card">
                     <div class="flex items-center justify-between gap-2">
-                        <span class="font-brand text-sm font-bold text-steel-dark">@(offerte.Value<string>("offerteNumber"))</span>
-                        <span class="rounded px-2 py-0.5 font-brand text-xs font-bold @statusClass">@status</span>
+                        <span class="font-brand text-sm font-bold text-steel-dark">@offerte.Number</span>
+                        <span class="rounded px-2 py-0.5 font-brand text-xs font-bold @statusClass">@offerte.Status</span>
                     </div>
                     <h2 class="mt-3 text-lg">@offerte.Name</h2>
-                    <p class="mt-2 text-sm leading-relaxed text-ink-soft">@(offerte.Value<string>("description"))</p>
+                    <p class="mt-2 text-sm leading-relaxed text-ink-soft">@offerte.Description</p>
                     <dl class="mt-4 grid grid-cols-3 gap-3 border-t border-line pt-4 text-sm">
                         <div>
                             <dt class="font-brand text-xs text-ink-soft">Datum</dt>
-                            <dd>@(offerte.Value<DateTime>("offerteDate") == default ? "—" : offerte.Value<DateTime>("offerteDate").ToString("dd-MM-yyyy"))</dd>
+                            <dd>@(offerte.Date?.ToString("dd-MM-yyyy") ?? "—")</dd>
                         </div>
                         <div>
                             <dt class="font-brand text-xs text-ink-soft">Geldig tot</dt>
-                            <dd>@(offerte.Value<DateTime>("validUntil") == default ? "—" : offerte.Value<DateTime>("validUntil").ToString("dd-MM-yyyy"))</dd>
+                            <dd>@(offerte.ValidUntil?.ToString("dd-MM-yyyy") ?? "—")</dd>
                         </div>
                         <div>
                             <dt class="font-brand text-xs text-ink-soft">Bedrag</dt>
-                            <dd class="font-bold">@(offerte.Value<decimal>("amount").ToString("C", nl))</dd>
+                            <dd class="font-bold">@offerte.Amount.ToString("C", nl)</dd>
                         </div>
                     </dl>
                     <div class="mt-4 flex gap-3">
-                        @if (pdf is not null)
+                        @if (!string.IsNullOrEmpty(offerte.PdfUrl))
                         {
-                            <a class="btn-secondary px-4 py-2 text-sm" href="@pdf.Url()" rel="noopener" target="_blank">Bekijk PDF</a>
+                            <a class="btn-secondary px-4 py-2 text-sm" href="@offerte.PdfUrl" rel="noopener" target="_blank">Bekijk PDF</a>
                         }
-                        <a class="btn-primary px-4 py-2 text-sm" href="mailto:info@scriptonic.nl?subject=Reactie op offerte @(offerte.Value<string>("offerteNumber"))">Reageer op offerte</a>
+                        <a class="btn-primary px-4 py-2 text-sm" href="mailto:info@scriptonic.nl?subject=Reactie op offerte @offerte.Number">Reageer op offerte</a>
                     </div>
                 </div>
             }

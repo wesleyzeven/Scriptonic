@@ -1,7 +1,7 @@
 ﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
-    ViewData["Title"] = Model.Value<string>("seoTitle") ?? Model.Name;
+    ViewData["Title"] = Model.Value<string>("seoTitle") is string st && !string.IsNullOrWhiteSpace(st) ? st : Model.Name;
     ViewData["MetaDescription"] = Model.Value<string>("seoDescription") ?? Model.Value<string>("summary");
     string[] tags = (Model.Value<string>("tags") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
     string? projectUrl = Model.Value<string>("projectUrl");
