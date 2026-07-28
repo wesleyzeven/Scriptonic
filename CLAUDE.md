@@ -23,7 +23,8 @@ Portal specifics:
   under the hidden "Portaal" node, matched by `relationCode`.
 - The offerte doc type intentionally has **no template** (no public URL).
 
-Deploy: homelab pattern. Prod = main → port 8200 (scriptonic.local.io),
-acc = develop/acceptance → 8210 (scriptonic-acc.local.io). Compose dirs under
+Deploy: homelab pattern. Prod = main → port 8220 (scriptonic.local.io),
+acc = develop/acceptance → 8230 (scriptonic-acc.local.io) — 8200/8210 are
+taken by the Beszel/Scrutiny monitoring stack. Compose dirs under
 C:\DockerProjects\Scriptonic\. Planned: application portal ("sollicitatieportaal")
 as a later addition.

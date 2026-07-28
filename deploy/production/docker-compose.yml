@@ -6,7 +6,7 @@ name: scriptonic-production
 #
 # Reachable via nginx-proxy-manager at scriptonic.local.io.
 # Host ports:
-#   Web : 8200
+#   Web : 8220
 #   DB  : none (SQLite in the umbraco-data volume)
 
 services:
@@ -15,7 +15,7 @@ services:
     container_name: scriptonic-prod-web
     restart: unless-stopped
     ports:
-      - "8200:8080"
+      - "8220:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       # First-boot unattended install; no-op once installed.

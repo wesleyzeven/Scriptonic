@@ -84,7 +84,7 @@ jobs:
           do {
             Start-Sleep -Seconds 5
             try {
-              $response = Invoke-RestMethod -Uri http://localhost:8200/health -TimeoutSec 5
+              $response = Invoke-RestMethod -Uri http://localhost:8220/health -TimeoutSec 5
               if ($response.status -eq 'ok') {
                 Write-Host "Healthy: version $($response.version)"
                 exit 0

@@ -47,8 +47,8 @@ membertype, startcontent). Templates zijn build-time gecompileerd
 
 | Omgeving  | Branch             | Poort | Hostnaam                  |
 |-----------|--------------------|-------|---------------------------|
-| acceptance| `develop`/`acceptance` | 8210  | scriptonic-acc.local.io   |
-| production| `main` / `v*`-tag  | 8200  | scriptonic.local.io       |
+| acceptance| `develop`/`acceptance` | 8230  | scriptonic-acc.local.io   |
+| production| `main` / `v*`-tag  | 8220  | scriptonic.local.io       |
 
 GitHub Actions (self-hosted runner `homelab, windows`) bouwt de image en doet
 `docker compose up -d` vanuit `C:\DockerProjects\Scriptonic\{acceptance,production}`.

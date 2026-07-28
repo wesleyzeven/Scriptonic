@@ -6,7 +6,7 @@ name: scriptonic-acceptance
 #
 # Reachable via nginx-proxy-manager at scriptonic-acc.local.io.
 # Host ports:
-#   Web : 8210
+#   Web : 8230
 #   DB  : none (SQLite in the umbraco-data volume)
 
 services:
@@ -15,7 +15,7 @@ services:
     container_name: scriptonic-acc-web
     restart: unless-stopped
     ports:
-      - "8210:8080"
+      - "8230:8080"
     environment:
       ASPNETCORE_ENVIRONMENT: Production
       # First-boot unattended install; no-op once installed.
