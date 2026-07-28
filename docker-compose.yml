@@ -1,0 +1,37 @@
+# Local test stack — builds the image and runs it like acc/prod would.
+#   docker compose up --build
+# Site on http://localhost:8209, backoffice on http://localhost:8209/umbraco
+# (admin: dev@scriptonic.local / LocalDev123!)
+# Portal demo login: demo@scriptonic.nl / DemoKlant123!
+
+services:
+  scriptonic-web:
+    build:
+      context: .
+      dockerfile: src/Scriptonic.Web/Dockerfile
+    image: scriptonic-web:dev
+    container_name: scriptonic-dev-web
+    restart: unless-stopped
+    ports:
+      - "8209:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      Umbraco__CMS__Unattended__InstallUnattended: "true"
+      Umbraco__CMS__Unattended__UnattendedUserName: Local Dev
+      Umbraco__CMS__Unattended__UnattendedUserEmail: dev@scriptonic.local
+      Umbraco__CMS__Unattended__UnattendedUserPassword: LocalDev123!
+      Site__PublicBaseUrl: http://localhost:8209
+      Site__AdminKey: local-dev-admin-key
+      Site__Portal__SeedDemoMember: "true"
+    volumes:
+      - umbraco-data:/app/umbraco/Data
+      - umbraco-media:/app/wwwroot/media
+      - umbraco-logs:/app/umbraco/Logs
+
+volumes:
+  umbraco-data:
+    name: scriptonic-dev-umbraco-data
+  umbraco-media:
+    name: scriptonic-dev-umbraco-media
+  umbraco-logs:
+    name: scriptonic-dev-umbraco-logs

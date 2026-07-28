@@ -1,0 +1,100 @@
+name: Deploy Acceptance
+
+# Builds the Scriptonic image and (re)deploys the acceptance stack on the
+# homelab. Runs on a self-hosted runner that has Docker available locally and
+# can write to C:\DockerProjects\Scriptonic\acceptance.
+#
+# The runner must be registered in the repo with the labels:
+#   self-hosted, homelab, windows
+
+on:
+  push:
+    branches:
+      - develop
+      - acceptance
+  workflow_dispatch:
+
+concurrency:
+  group: scriptonic-acceptance
+  cancel-in-progress: false
+
+env:
+  COMPOSE_DIR: C:\DockerProjects\Scriptonic\acceptance
+  IMAGE_TAG: acceptance
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, homelab, windows]
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show docker version
+        shell: powershell
+        run: |
+          docker version
+          docker compose version
+
+      - name: Compute release version
+        id: version
+        shell: pwsh
+        run: |
+          # Acceptance versions are tagged so they are obviously not production
+          # builds. The run number auto-increments per workflow run.
+          $base = (Get-Content -Raw VERSION).Trim()
+          $appVersion = "$base.${{ github.run_number }}-acc"
+          Write-Host "App version: $appVersion"
+          "version=$appVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Build web image
+        shell: powershell
+        run: |
+          docker build `
+            -f src/Scriptonic.Web/Dockerfile `
+            --build-arg APP_VERSION=${{ steps.version.outputs.version }} `
+            -t scriptonic-web:${{ env.IMAGE_TAG }} `
+            -t "scriptonic-web:${{ env.IMAGE_TAG }}-${{ github.sha }}" `
+            .
+
+      - name: Verify .env exists on host
+        shell: powershell
+        run: |
+          if (-not (Test-Path "$env:COMPOSE_DIR\.env")) {
+            Write-Error "Missing $env:COMPOSE_DIR\.env. Copy .env.example to .env on the host before the first deploy."
+            exit 1
+          }
+
+      - name: Deploy stack
+        shell: powershell
+        working-directory: ${{ env.COMPOSE_DIR }}
+        run: |
+          docker compose up -d --remove-orphans
+
+      - name: Smoke check /health
+        shell: pwsh
+        run: |
+          $deadline = (Get-Date).AddMinutes(3)
+          do {
+            Start-Sleep -Seconds 5
+            try {
+              $response = Invoke-RestMethod -Uri http://localhost:8210/health -TimeoutSec 5
+              if ($response.status -eq 'ok') {
+                Write-Host "Healthy: version $($response.version)"
+                exit 0
+              }
+            } catch { Write-Host "Not ready yet..." }
+          } until ((Get-Date) -gt $deadline)
+          Write-Error "Acceptance stack did not become healthy within 3 minutes."
+          exit 1
+
+      - name: Show running containers
+        shell: powershell
+        working-directory: ${{ env.COMPOSE_DIR }}
+        run: docker compose ps
+
+      - name: Prune old image revisions
+        shell: powershell
+        run: |
+          docker image prune -f --filter "label!=keep"

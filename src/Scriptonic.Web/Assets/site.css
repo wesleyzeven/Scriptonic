@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@source "../Views/**/*.cshtml";
+
+@theme {
+  /* Brand palette from the Scriptonic logo: steel blue S, black braces, paper white. */
+  --color-paper: #fafaf8;
+  --color-ink: #16181d;
+  --color-ink-soft: #4b5058;
+  --color-steel: #6d8fb5;
+  --color-steel-dark: #4f709a;
+  --color-steel-deep: #35516f;
+  --color-steel-soft: #eef2f7;
+  --color-line: #e3e5e9;
+
+  --font-sans: "Segoe UI", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-brand: "Courier Prime", "Courier New", ui-monospace, monospace;
+
+  --shadow-card: 0 1px 2px rgb(22 24 29 / 0.06), 0 8px 24px -12px rgb(53 81 111 / 0.25);
+}
+
+@layer base {
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+  }
+
+  [x-cloak] {
+    display: none !important;
+  }
+
+  h1, h2, h3 {
+    @apply font-brand font-bold tracking-tight;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-steel-dark px-6 py-3 font-brand font-bold text-white transition hover:bg-steel-deep;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border-2 border-ink/80 bg-transparent px-6 py-3 font-brand font-bold text-ink transition hover:border-steel-dark hover:text-steel-dark;
+  }
+
+  .btn-light {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border-2 border-white/70 px-6 py-3 font-brand font-bold text-white transition hover:bg-white hover:text-ink;
+  }
+
+  .card {
+    @apply rounded-lg border border-line bg-white p-6 shadow-card;
+  }
+
+  .input {
+    @apply w-full rounded-md border border-line bg-white px-4 py-2.5 text-ink outline-none transition focus:border-steel-dark focus:ring-2 focus:ring-steel/30;
+  }
+
+  .label {
+    @apply mb-1 block font-brand text-sm font-bold text-ink;
+  }
+
+  /* Curly-brace flourish around small labels, echoing the logo. */
+  .braced::before { content: "{ "; @apply text-steel; }
+  .braced::after { content: " }"; @apply text-steel; }
+
+  .tag {
+    @apply inline-flex items-center rounded bg-steel-soft px-2.5 py-0.5 font-brand text-xs font-bold text-steel-deep;
+  }
+
+  .prose-block p {
+    @apply mb-4 leading-relaxed text-ink-soft;
+  }
+
+  .prose-block h2 {
+    @apply mt-8 mb-3 text-xl;
+  }
+}

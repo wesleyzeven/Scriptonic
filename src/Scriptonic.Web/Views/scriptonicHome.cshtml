@@ -1,0 +1,106 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "";
+    ViewData["MetaDescription"] = Model.Value<string>("seoDescription");
+    var diensten = Model.Children().FirstOrDefault(c => c.ContentType.Alias == SiteAliases.Diensten);
+    var portfolio = Model.Children().FirstOrDefault(c => c.ContentType.Alias == SiteAliases.Portfolio);
+    var contact = Model.Children().FirstOrDefault(c => c.ContentType.Alias == SiteAliases.Contact);
+    string ctaLabel = Model.Value<string>("ctaLabel") ?? "Plan een kennismaking";
+}
+
+<section class="bg-ink text-white">
+    <div class="mx-auto max-w-6xl px-4 py-24 sm:py-32">
+        <p class="braced font-brand text-sm font-bold text-white/70">@(Model.Value<string>("tagline"))</p>
+        <h1 class="mt-4 max-w-3xl text-4xl leading-tight sm:text-5xl">
+            @(Model.Value<string>("heroTitle"))
+        </h1>
+        <p class="mt-6 max-w-2xl text-lg leading-relaxed text-white/75">
+            @(Model.Value<string>("heroText"))
+        </p>
+        <div class="mt-10 flex flex-wrap gap-4">
+            @if (contact is not null)
+            {
+                <a href="@contact.Url()" class="btn-primary">@ctaLabel</a>
+            }
+            @if (portfolio is not null)
+            {
+                <a href="@portfolio.Url()" class="btn-light">Bekijk ons werk</a>
+            }
+        </div>
+    </div>
+</section>
+
+@if (diensten is not null)
+{
+    <section class="mx-auto max-w-6xl px-4 py-20">
+        <p class="braced font-brand text-sm font-bold text-steel-dark">diensten</p>
+        <h2 class="mt-2 text-3xl">Wat we maken</h2>
+        <div class="mt-10 grid gap-6 md:grid-cols-3">
+            @foreach (var dienst in diensten.Children().Where(c => c.ContentType.Alias == SiteAliases.Dienst))
+            {
+                <a href="@dienst.Url()" class="card group">
+                    <span class="text-3xl">@(dienst.Value<string>("icon"))</span>
+                    <h3 class="mt-4 text-lg group-hover:text-steel-dark">@dienst.Name</h3>
+                    <p class="mt-2 text-sm leading-relaxed text-ink-soft">@(dienst.Value<string>("summary"))</p>
+                    <span class="mt-4 inline-block font-brand text-sm font-bold text-steel-dark">Lees meer →</span>
+                </a>
+            }
+        </div>
+    </section>
+}
+
+@if (portfolio is not null)
+{
+    <section class="bg-steel-soft/60">
+        <div class="mx-auto max-w-6xl px-4 py-20">
+            <p class="braced font-brand text-sm font-bold text-steel-dark">portfolio</p>
+            <h2 class="mt-2 text-3xl">Recent werk</h2>
+            <div class="mt-10 grid gap-6 md:grid-cols-3">
+                @foreach (var item in portfolio.Children().Where(c => c.ContentType.Alias == SiteAliases.Case).Take(3))
+                {
+                    <a href="@item.Url()" class="card group">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="tag">@(item.Value<string>("projectType"))</span>
+                            <span class="font-brand text-xs text-ink-soft">@(item.Value<string>("status"))</span>
+                        </div>
+                        <h3 class="mt-4 text-lg group-hover:text-steel-dark">@item.Name</h3>
+                        <p class="mt-2 text-sm leading-relaxed text-ink-soft">@(item.Value<string>("summary"))</p>
+                    </a>
+                }
+            </div>
+            <a href="@portfolio.Url()" class="mt-8 inline-block font-brand font-bold text-steel-dark hover:text-steel-deep">Al ons werk →</a>
+        </div>
+    </section>
+}
+
+<section class="mx-auto max-w-6xl px-4 py-20">
+    <div class="grid gap-10 md:grid-cols-3">
+        <div>
+            <p class="font-brand text-4xl font-bold text-steel">01</p>
+            <h3 class="mt-2 text-lg">Kennismaken &amp; plan</h3>
+            <p class="mt-2 text-sm leading-relaxed text-ink-soft">We beginnen met een gratis gesprek. Daarna krijg je een helder voorstel: wat we bouwen, wat het kost en wanneer het er staat.</p>
+        </div>
+        <div>
+            <p class="font-brand text-4xl font-bold text-steel">02</p>
+            <h3 class="mt-2 text-lg">Bouwen &amp; meekijken</h3>
+            <p class="mt-2 text-sm leading-relaxed text-ink-soft">Je kijkt live mee op een acceptatieomgeving terwijl we bouwen. Feedback verwerken we direct — geen verrassingen bij oplevering.</p>
+        </div>
+        <div>
+            <p class="font-brand text-4xl font-bold text-steel">03</p>
+            <h3 class="mt-2 text-lg">Live &amp; verder</h3>
+            <p class="mt-2 text-sm leading-relaxed text-ink-soft">Na livegang blijven we aan boord: hosting, updates, back-ups en doorontwikkeling. Via het klantportaal volg je facturen en offertes.</p>
+        </div>
+    </div>
+</section>
+
+@if (contact is not null)
+{
+    <section class="bg-ink text-white">
+        <div class="mx-auto max-w-6xl px-4 py-16 text-center">
+            <h2 class="text-3xl">Iets moois bouwen<span class="text-steel">?</span></h2>
+            <p class="mx-auto mt-4 max-w-xl text-white/75">Vertel ons wat je voor ogen hebt — we denken vrijblijvend mee.</p>
+            <a href="@contact.Url()" class="btn-primary mt-8">@ctaLabel</a>
+        </div>
+    </section>
+}

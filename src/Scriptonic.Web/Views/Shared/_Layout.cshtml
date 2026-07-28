@@ -1,0 +1,87 @@
+@using Microsoft.Extensions.Options
+@inject IOptions<SiteOptions> SiteOptionsAccessor
+@{
+    SiteOptions site = SiteOptionsAccessor.Value;
+    string baseUrl = site.PublicBaseUrl.TrimEnd('/');
+    string title = ViewData["Title"] is string t && !string.IsNullOrEmpty(t)
+        ? $"{t} — Scriptonic"
+        : "Scriptonic — websites, games & maatwerk software";
+    string metaDescription = ViewData["MetaDescription"] as string
+        ?? "Scriptonic bouwt moderne websites, webapplicaties en games. Van ontwerp tot hosting en beheer — software met karakter.";
+    string canonicalPath = Context.Request.Path.HasValue ? Context.Request.Path.Value! : "/";
+}
+<!DOCTYPE html>
+<html lang="nl" class="h-full">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@title</title>
+    <meta name="description" content="@metaDescription" />
+    <link rel="canonical" href="@(baseUrl + canonicalPath)" />
+    <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="stylesheet" href="/css/site.css" />
+    <script defer src="/js/alpine.min.js"></script>
+
+    <meta property="og:site_name" content="Scriptonic" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="@title" />
+    <meta property="og:description" content="@metaDescription" />
+    <meta property="og:url" content="@(baseUrl + canonicalPath)" />
+    <meta property="og:image" content="@(baseUrl)/img/logo-mark.png" />
+    <meta property="og:locale" content="nl_NL" />
+    <meta name="twitter:card" content="summary" />
+
+    <script type="application/ld+json">
+    {
+      "@@context": "https://schema.org",
+      "@@type": "Organization",
+      "name": "Scriptonic",
+      "url": "@baseUrl",
+      "logo": "@(baseUrl)/img/logo-mark.png",
+      "email": "info@scriptonic.nl",
+      "description": "Scriptonic bouwt websites, webapplicaties en games.",
+      "address": { "@@type": "PostalAddress", "addressCountry": "NL" }
+    }
+    </script>
+
+    @if (!string.IsNullOrEmpty(site.AnalyticsScriptUrl))
+    {
+        <script defer src="@site.AnalyticsScriptUrl"></script>
+    }
+</head>
+<body class="flex min-h-screen flex-col">
+    @await Component.InvokeAsync("SiteHeader")
+
+    <main class="flex-1">
+        @RenderBody()
+    </main>
+
+    <footer class="mt-20 bg-ink text-white">
+        <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-3">
+            <div>
+                <p class="font-brand text-xl font-bold"><span class="text-steel">{</span> S <span class="text-steel">}</span> criptonic</p>
+                <p class="mt-2 text-sm text-white/70">Websites, games &amp; maatwerk software.<br />Gebouwd, gehost en beheerd door één team.</p>
+            </div>
+            <div class="text-sm">
+                <p class="braced font-brand font-bold">menu</p>
+                <ul class="mt-3 space-y-2 text-white/70">
+                    <li><a class="hover:text-white" href="/diensten/">Diensten</a></li>
+                    <li><a class="hover:text-white" href="/portfolio/">Portfolio</a></li>
+                    <li><a class="hover:text-white" href="/over-ons/">Over ons</a></li>
+                    <li><a class="hover:text-white" href="/contact/">Contact</a></li>
+                </ul>
+            </div>
+            <div class="text-sm">
+                <p class="braced font-brand font-bold">klanten</p>
+                <ul class="mt-3 space-y-2 text-white/70">
+                    <li><a class="hover:text-white" href="/portaal">Klantportaal — facturen &amp; offertes</a></li>
+                    <li><a class="hover:text-white" href="mailto:info@scriptonic.nl">info@scriptonic.nl</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="border-t border-white/10 py-4 text-center font-brand text-xs text-white/50">
+            &copy; @DateTime.Now.Year Scriptonic · KvK · Nederland
+        </div>
+    </footer>
+</body>
+</html>

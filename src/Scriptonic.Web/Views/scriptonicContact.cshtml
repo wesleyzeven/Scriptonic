@@ -1,0 +1,82 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = Model.Value<string>("seoTitle") ?? Model.Name;
+    ViewData["MetaDescription"] = Model.Value<string>("seoDescription") ?? Model.Value<string>("intro");
+    string email = Model.Value<string>("email") ?? "info@scriptonic.nl";
+}
+
+<section class="mx-auto max-w-6xl px-4 py-16">
+    <p class="braced font-brand text-sm font-bold text-steel-dark">contact</p>
+    <h1 class="mt-2 text-4xl">@Model.Name</h1>
+    <p class="mt-4 max-w-2xl text-lg text-ink-soft">@(Model.Value<string>("intro"))</p>
+
+    <div class="mt-12 grid gap-10 lg:grid-cols-3">
+        <div class="lg:col-span-2">
+            @if (TempData["ContactSuccess"] is not null)
+            {
+                <div class="mb-6 rounded-md border border-steel/40 bg-steel-soft p-4 font-brand font-bold text-steel-deep">
+                    ✓ Bedankt voor je bericht! We nemen zo snel mogelijk contact met je op.
+                </div>
+            }
+            @if (TempData["ContactError"] is string error)
+            {
+                <div class="mb-6 rounded-md border border-red-300 bg-red-50 p-4 text-red-700">@error</div>
+            }
+
+            <form method="post" action="/contact-form" class="card space-y-5">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ReturnUrl" value="@Model.Url()" />
+                @* Honeypot: verborgen voor mensen, ingevuld door bots. *@
+                <div class="hidden" aria-hidden="true">
+                    <label>Website <input type="text" name="Website" tabindex="-1" autocomplete="off" /></label>
+                </div>
+
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <div>
+                        <label class="label" for="c-name">Naam *</label>
+                        <input class="input" id="c-name" name="Name" required maxlength="200" />
+                    </div>
+                    <div>
+                        <label class="label" for="c-email">E-mail *</label>
+                        <input class="input" id="c-email" name="Email" type="email" required maxlength="320" />
+                    </div>
+                </div>
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <div>
+                        <label class="label" for="c-company">Bedrijf</label>
+                        <input class="input" id="c-company" name="Company" maxlength="200" />
+                    </div>
+                    <div>
+                        <label class="label" for="c-subject">Onderwerp</label>
+                        <select class="input" id="c-subject" name="Subject">
+                            <option>Website</option>
+                            <option>Game</option>
+                            <option>Maatwerk / koppeling</option>
+                            <option>Algemeen</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="label" for="c-message">Bericht *</label>
+                    <textarea class="input" id="c-message" name="Message" rows="6" required maxlength="4000"
+                              placeholder="Vertel kort wat je zoekt — een nieuwe website, een game-idee, een koppeling..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary w-full sm:w-auto">Verstuur bericht</button>
+            </form>
+        </div>
+
+        <aside class="space-y-6">
+            <div class="card">
+                <h2 class="text-lg">Direct contact</h2>
+                <p class="mt-3 text-sm text-ink-soft">Liever mailen? Dat kan natuurlijk ook.</p>
+                <a class="mt-2 block font-brand font-bold text-steel-dark" href="mailto:@email">@email</a>
+            </div>
+            <div class="card">
+                <h2 class="text-lg">Al klant?</h2>
+                <p class="mt-3 text-sm text-ink-soft">In het klantportaal vind je je facturen en offertes en beheer je je gegevens.</p>
+                <a class="mt-4 inline-block font-brand font-bold text-steel-dark" href="/portaal">Naar het klantportaal →</a>
+            </div>
+        </aside>
+    </div>
+</section>

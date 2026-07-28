@@ -1,0 +1,89 @@
+@model PortalProfileModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Mijn gegevens";
+}
+
+<partial name="~/Views/Portal/_PortalNav.cshtml" />
+
+<section class="mx-auto max-w-3xl px-4 py-12">
+    <h1 class="text-3xl">Mijn gegevens</h1>
+    <p class="mt-2 text-ink-soft">
+        Deze gegevens gebruiken we voor facturen en offertes; wijzigingen worden direct in onze administratie verwerkt.
+    </p>
+
+    @if (TempData["ProfileSaved"] is not null)
+    {
+        <div class="mt-6 rounded-md border border-steel/40 bg-steel-soft p-4 font-brand font-bold text-steel-deep">
+            ✓ Je gegevens zijn opgeslagen.
+        </div>
+    }
+    @if (ViewData["RelationMissing"] is true)
+    {
+        <div class="mt-6 rounded-md border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+            Je account is nog niet gekoppeld aan onze administratie. <a class="underline" href="/contact/">Neem contact op</a> en we zetten het direct goed.
+        </div>
+    }
+
+    <form method="post" action="/portaal/profiel" class="card mt-8 space-y-5">
+        @Html.AntiForgeryToken()
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <p>@error.ErrorMessage</p>
+                }
+            </div>
+        }
+
+        <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+                <label class="label" for="f-name">Bedrijfsnaam / naam *</label>
+                <input class="input" id="f-name" name="Name" value="@Model.Name" required maxlength="100" />
+            </div>
+            <div>
+                <label class="label" for="f-contact">Contactpersoon</label>
+                <input class="input" id="f-contact" name="Contact" value="@Model.Contact" maxlength="50" />
+            </div>
+        </div>
+        <div>
+            <label class="label" for="f-address">Adres</label>
+            <input class="input" id="f-address" name="Address" value="@Model.Address" maxlength="150" />
+        </div>
+        <div class="grid gap-5 sm:grid-cols-3">
+            <div>
+                <label class="label" for="f-postal">Postcode</label>
+                <input class="input" id="f-postal" name="PostalCode" value="@Model.PostalCode" maxlength="50" />
+            </div>
+            <div>
+                <label class="label" for="f-city">Plaats</label>
+                <input class="input" id="f-city" name="City" value="@Model.City" maxlength="50" />
+            </div>
+            <div>
+                <label class="label" for="f-country">Land</label>
+                <input class="input" id="f-country" name="Country" value="@Model.Country" maxlength="50" />
+            </div>
+        </div>
+        <div class="grid gap-5 sm:grid-cols-2">
+            <div>
+                <label class="label" for="f-phone">Telefoon</label>
+                <input class="input" id="f-phone" name="PhoneNumber" value="@Model.PhoneNumber" maxlength="50" />
+            </div>
+            <div>
+                <label class="label" for="f-email">E-mailadres</label>
+                <input class="input" id="f-email" name="EmailAddress" type="email" value="@Model.EmailAddress" maxlength="150" />
+            </div>
+        </div>
+        <div>
+            <label class="label" for="f-website">Website</label>
+            <input class="input" id="f-website" name="Website" value="@Model.Website" maxlength="50" />
+        </div>
+
+        <button type="submit" class="btn-primary">Wijzigingen opslaan</button>
+        <p class="text-xs text-ink-soft">
+            Het e-mailadres waarmee je inlogt wijzig je niet hier — <a class="text-steel-dark underline" href="/contact/">neem daarvoor contact op</a>.
+        </p>
+    </form>
+</section>

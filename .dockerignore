@@ -1,0 +1,13 @@
+**/bin
+**/obj
+**/node_modules
+**/umbraco/Data
+**/umbraco/Logs
+**/umbraco/mediacache
+**/wwwroot/media
+**/.git
+**/.vs
+**/.idea
+**/*.user
+deploy
+docs

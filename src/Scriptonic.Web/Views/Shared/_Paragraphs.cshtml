@@ -1,0 +1,23 @@
+@model string
+@* Renders a plain-text field as paragraphs: blank line = new paragraph,
+   a line starting with "## " becomes a subheading for the block below it. *@
+@if (!string.IsNullOrWhiteSpace(Model))
+{
+    foreach (string block in Model.Replace("\r\n", "\n").Split("\n\n", StringSplitOptions.RemoveEmptyEntries))
+    {
+        string text = block.Trim();
+        if (text.StartsWith("## "))
+        {
+            string[] lines = text.Split('\n', 2);
+            <h2>@lines[0][3..].Trim()</h2>
+            if (lines.Length > 1 && !string.IsNullOrWhiteSpace(lines[1]))
+            {
+                <p>@lines[1].Trim()</p>
+            }
+        }
+        else
+        {
+            <p>@text</p>
+        }
+    }
+}

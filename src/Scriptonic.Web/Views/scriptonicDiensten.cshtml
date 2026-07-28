@@ -1,0 +1,24 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = Model.Value<string>("seoTitle") ?? Model.Name;
+    ViewData["MetaDescription"] = Model.Value<string>("seoDescription");
+}
+
+<section class="mx-auto max-w-6xl px-4 py-16">
+    <p class="braced font-brand text-sm font-bold text-steel-dark">diensten</p>
+    <h1 class="mt-2 text-4xl">@Model.Name</h1>
+    <p class="mt-4 max-w-2xl text-lg text-ink-soft">@(Model.Value<string>("intro"))</p>
+
+    <div class="mt-12 grid gap-6 md:grid-cols-3">
+        @foreach (var dienst in Model.Children().Where(c => c.ContentType.Alias == SiteAliases.Dienst))
+        {
+            <a href="@dienst.Url()" class="card group">
+                <span class="text-3xl">@(dienst.Value<string>("icon"))</span>
+                <h2 class="mt-4 text-xl group-hover:text-steel-dark">@dienst.Name</h2>
+                <p class="mt-2 text-sm leading-relaxed text-ink-soft">@(dienst.Value<string>("summary"))</p>
+                <span class="mt-4 inline-block font-brand text-sm font-bold text-steel-dark">Lees meer →</span>
+            </a>
+        }
+    </div>
+</section>

@@ -1,0 +1,105 @@
+name: Deploy Production
+
+# Builds the Scriptonic image and (re)deploys the production stack on the
+# homelab. Runs on a self-hosted runner that has Docker available locally and
+# can write to C:\DockerProjects\Scriptonic\production.
+#
+# Triggers:
+#   - push to main (every commit to main goes to production)
+#   - push of a v*.*.* tag (explicit release)
+#   - manual run via the Actions tab
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+concurrency:
+  group: scriptonic-production
+  cancel-in-progress: false
+
+env:
+  COMPOSE_DIR: C:\DockerProjects\Scriptonic\production
+  IMAGE_TAG: production
+
+jobs:
+  build-and-deploy:
+    runs-on: [self-hosted, homelab, windows]
+    timeout-minutes: 30
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show docker version
+        shell: powershell
+        run: |
+          docker version
+          docker compose version
+
+      - name: Compute release version
+        id: version
+        shell: pwsh
+        run: |
+          # Major.minor lives in /VERSION; patch is this workflow's run number,
+          # which auto-increments on every production deploy.
+          $base = (Get-Content -Raw VERSION).Trim()
+          $appVersion = "$base.${{ github.run_number }}"
+          Write-Host "App version: $appVersion"
+          "version=$appVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Build web image
+        shell: powershell
+        run: |
+          docker build `
+            -f src/Scriptonic.Web/Dockerfile `
+            --build-arg APP_VERSION=${{ steps.version.outputs.version }} `
+            -t scriptonic-web:${{ env.IMAGE_TAG }} `
+            -t "scriptonic-web:${{ env.IMAGE_TAG }}-${{ github.sha }}" `
+            -t "scriptonic-web:${{ steps.version.outputs.version }}" `
+            .
+
+      - name: Verify .env exists on host
+        shell: powershell
+        run: |
+          if (-not (Test-Path "$env:COMPOSE_DIR\.env")) {
+            Write-Error "Missing $env:COMPOSE_DIR\.env. Copy .env.example to .env on the host before the first deploy."
+            exit 1
+          }
+
+      - name: Deploy stack
+        shell: powershell
+        working-directory: ${{ env.COMPOSE_DIR }}
+        run: |
+          docker compose up -d --remove-orphans
+
+      - name: Smoke check /health
+        shell: pwsh
+        run: |
+          $deadline = (Get-Date).AddMinutes(3)
+          do {
+            Start-Sleep -Seconds 5
+            try {
+              $response = Invoke-RestMethod -Uri http://localhost:8200/health -TimeoutSec 5
+              if ($response.status -eq 'ok') {
+                Write-Host "Healthy: version $($response.version)"
+                exit 0
+              }
+            } catch { Write-Host "Not ready yet..." }
+          } until ((Get-Date) -gt $deadline)
+          Write-Error "Production stack did not become healthy within 3 minutes."
+          exit 1
+
+      - name: Show running containers
+        shell: powershell
+        working-directory: ${{ env.COMPOSE_DIR }}
+        run: docker compose ps
+
+      - name: Prune old image revisions
+        shell: powershell
+        run: |
+          docker image prune -f --filter "label!=keep"

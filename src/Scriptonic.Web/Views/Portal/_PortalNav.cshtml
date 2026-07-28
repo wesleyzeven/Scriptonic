@@ -1,0 +1,39 @@
+@{
+    PortalUser? portalUser = ViewData["PortalUser"] as PortalUser;
+    string path = Context.Request.Path.Value ?? "";
+    string Active(string href) => path.TrimEnd('/') == href.TrimEnd('/')
+        ? "bg-steel-dark text-white"
+        : "text-ink-soft hover:text-steel-dark";
+}
+<div class="border-b border-line bg-white">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <nav class="flex flex-wrap gap-1 font-brand text-sm font-bold">
+            <a class="rounded-md px-3 py-1.5 transition @Active("/portaal")" href="/portaal">Overzicht</a>
+            <a class="rounded-md px-3 py-1.5 transition @Active("/portaal/facturen")" href="/portaal/facturen">Facturen</a>
+            <a class="rounded-md px-3 py-1.5 transition @Active("/portaal/offertes")" href="/portaal/offertes">Offertes</a>
+            <a class="rounded-md px-3 py-1.5 transition @Active("/portaal/profiel")" href="/portaal/profiel">Mijn gegevens</a>
+        </nav>
+        <div class="flex items-center gap-3">
+            @if (portalUser is not null)
+            {
+                <span class="hidden font-brand text-xs text-ink-soft sm:inline">@portalUser.CompanyName</span>
+            }
+            <form method="post" action="/portaal/logout">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="font-brand text-sm font-bold text-ink-soft hover:text-steel-dark">Uitloggen</button>
+            </form>
+        </div>
+    </div>
+</div>
+@if (ViewData["IsDemo"] is true)
+{
+    <div class="bg-steel-soft py-2 text-center font-brand text-xs font-bold text-steel-deep">
+        Demo-modus: er is geen e-Boekhouden API-token ingesteld — je ziet voorbeeldgegevens.
+    </div>
+}
+@if (ViewData["BoekhoudenError"] is true)
+{
+    <div class="bg-red-50 py-2 text-center font-brand text-xs font-bold text-red-700">
+        De boekhouding is tijdelijk niet bereikbaar. Probeer het later opnieuw.
+    </div>
+}

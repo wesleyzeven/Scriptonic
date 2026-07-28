@@ -1,0 +1,57 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = Model.Value<string>("seoTitle") ?? Model.Name;
+    ViewData["MetaDescription"] = Model.Value<string>("seoDescription") ?? Model.Value<string>("summary");
+    string[] tags = (Model.Value<string>("tags") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
+    string? projectUrl = Model.Value<string>("projectUrl");
+}
+
+<section class="mx-auto max-w-3xl px-4 py-16">
+    <p class="braced font-brand text-sm font-bold text-steel-dark">case</p>
+    <h1 class="mt-2 text-4xl">@Model.Name</h1>
+
+    <dl class="mt-6 grid grid-cols-2 gap-4 rounded-lg border border-line bg-white p-5 text-sm sm:grid-cols-4">
+        <div>
+            <dt class="font-brand text-xs font-bold text-ink-soft">Opdrachtgever</dt>
+            <dd class="mt-1">@(Model.Value<string>("client"))</dd>
+        </div>
+        <div>
+            <dt class="font-brand text-xs font-bold text-ink-soft">Soort</dt>
+            <dd class="mt-1">@(Model.Value<string>("projectType"))</dd>
+        </div>
+        <div>
+            <dt class="font-brand text-xs font-bold text-ink-soft">Status</dt>
+            <dd class="mt-1">@(Model.Value<string>("status"))</dd>
+        </div>
+        @if (!string.IsNullOrEmpty(projectUrl))
+        {
+            <div>
+                <dt class="font-brand text-xs font-bold text-ink-soft">Bekijk</dt>
+                <dd class="mt-1"><a class="text-steel-dark underline" href="@projectUrl" rel="noopener" target="_blank">Live site</a></dd>
+            </div>
+        }
+    </dl>
+
+    <p class="mt-8 text-lg text-ink-soft">@(Model.Value<string>("summary"))</p>
+
+    <div class="prose-block mt-6">
+        <partial name="_Paragraphs" model="@(Model.Value<string>("bodyText"))" />
+    </div>
+
+    @if (tags.Length > 0)
+    {
+        <div class="mt-8 flex flex-wrap gap-2">
+            @foreach (string tag in tags)
+            {
+                <span class="tag">@tag.Trim()</span>
+            }
+        </div>
+    }
+
+    <div class="mt-12 rounded-lg bg-steel-soft p-8 text-center">
+        <h2 class="text-xl">Zoiets ook nodig?</h2>
+        <p class="mt-2 text-ink-soft">We vertellen je graag hoe we dit aanpakken voor jouw project.</p>
+        <a href="/contact/" class="btn-primary mt-6">Neem contact op</a>
+    </div>
+</section>

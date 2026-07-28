@@ -1,0 +1,53 @@
+name: scriptonic-production
+
+# Production stack for the Scriptonic company site + customer portal.
+# Image scriptonic-web:production is built by .github/workflows/deploy-production.yml
+# on the self-hosted runner before this compose file is brought up.
+#
+# Reachable via nginx-proxy-manager at scriptonic.local.io.
+# Host ports:
+#   Web : 8200
+#   DB  : none (SQLite in the umbraco-data volume)
+
+services:
+  scriptonic-web:
+    image: scriptonic-web:production
+    container_name: scriptonic-prod-web
+    restart: unless-stopped
+    ports:
+      - "8200:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # First-boot unattended install; no-op once installed.
+      Umbraco__CMS__Unattended__InstallUnattended: "true"
+      Umbraco__CMS__Unattended__UnattendedUserName: ${UMBRACO_ADMIN_NAME:-Administrator}
+      Umbraco__CMS__Unattended__UnattendedUserEmail: ${UMBRACO_ADMIN_EMAIL:?UMBRACO_ADMIN_EMAIL is required}
+      Umbraco__CMS__Unattended__UnattendedUserPassword: ${UMBRACO_ADMIN_PASSWORD:?UMBRACO_ADMIN_PASSWORD is required}
+      Umbraco__CMS__WebRouting__UmbracoApplicationUrl: https://scriptonic.local.io
+      Umbraco__CMS__Global__UseHttps: "true"
+      Site__PublicBaseUrl: https://scriptonic.local.io
+      Site__AdminKey: ${SITE_ADMIN_KEY:?SITE_ADMIN_KEY is required}
+      # e-Boekhouden API token; empty runs the portal in demo mode with
+      # sample data (never leave empty in production once customers log in).
+      Site__Eboekhouden__ApiToken: ${EBOEKHOUDEN_API_TOKEN:-}
+      # Optional Scriptonic Analytics tracker script URL.
+      Site__AnalyticsScriptUrl: ${ANALYTICS_SCRIPT_URL:-}
+    volumes:
+      - umbraco-data:/app/umbraco/Data
+      - umbraco-media:/app/wwwroot/media
+      - umbraco-logs:/app/umbraco/Logs
+    networks:
+      - scriptonic-prod
+
+volumes:
+  umbraco-data:
+    name: scriptonic-production-umbraco-data
+  umbraco-media:
+    name: scriptonic-production-umbraco-media
+  umbraco-logs:
+    name: scriptonic-production-umbraco-logs
+
+networks:
+  scriptonic-prod:
+    name: scriptonic-production
+    driver: bridge

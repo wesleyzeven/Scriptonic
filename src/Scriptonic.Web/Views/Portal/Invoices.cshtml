@@ -1,0 +1,73 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Facturen";
+    var outstanding = ViewData["Outstanding"] as IReadOnlyList<EboekOutstandingInvoice> ?? [];
+    var invoices = ViewData["Invoices"] as IReadOnlyList<EboekInvoice> ?? [];
+    var nl = new System.Globalization.CultureInfo("nl-NL");
+}
+
+<partial name="~/Views/Portal/_PortalNav.cshtml" />
+
+<section class="mx-auto max-w-6xl px-4 py-12">
+    <h1 class="text-3xl">Facturen</h1>
+    <p class="mt-2 text-ink-soft">Alle facturen uit onze boekhouding (e-Boekhouden), altijd actueel.</p>
+
+    @if (invoices.Count == 0)
+    {
+        <div class="card mt-8 text-center text-ink-soft">Er zijn nog geen facturen voor je account.</div>
+    }
+    else
+    {
+        <div class="card mt-8 overflow-x-auto p-0">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-line text-left font-brand text-xs text-ink-soft">
+                        <th class="px-5 py-3">Factuur</th>
+                        <th class="px-5 py-3">Datum</th>
+                        <th class="px-5 py-3">Vervaldatum</th>
+                        <th class="px-5 py-3 text-right">Excl. btw</th>
+                        <th class="px-5 py-3 text-right">Incl. btw</th>
+                        <th class="px-5 py-3 text-right">Status</th>
+                        <th class="px-5 py-3 text-right">PDF</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var invoice in invoices)
+                    {
+                        var openInvoice = outstanding.FirstOrDefault(o => o.InvoiceNumber == invoice.InvoiceNumber);
+                        <tr class="border-b border-line/60">
+                            <td class="px-5 py-3 font-brand font-bold">@invoice.InvoiceNumber</td>
+                            <td class="px-5 py-3">@invoice.Date?.ToString("dd-MM-yyyy")</td>
+                            <td class="px-5 py-3">@invoice.DueDate?.ToString("dd-MM-yyyy")</td>
+                            <td class="px-5 py-3 text-right">@((invoice.TotalExcludingVat ?? 0).ToString("C", nl))</td>
+                            <td class="px-5 py-3 text-right">@((invoice.TotalIncludingVat ?? 0).ToString("C", nl))</td>
+                            <td class="px-5 py-3 text-right">
+                                @if (openInvoice is not null)
+                                {
+                                    <span class="rounded bg-amber-100 px-2 py-0.5 font-brand text-xs font-bold text-amber-800">
+                                        Open: @((openInvoice.OutstandingAmount ?? 0).ToString("C", nl))
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="rounded bg-emerald-100 px-2 py-0.5 font-brand text-xs font-bold text-emerald-800">Voldaan</span>
+                                }
+                            </td>
+                            <td class="px-5 py-3 text-right">
+                                @if (!string.IsNullOrEmpty(invoice.UrlPdfFile))
+                                {
+                                    <a class="font-brand font-bold text-steel-dark underline" href="@invoice.UrlPdfFile" rel="noopener" target="_blank">Download</a>
+                                }
+                                else
+                                {
+                                    <span class="text-ink-soft/50">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <p class="mt-4 text-xs text-ink-soft">Klopt er iets niet? <a class="text-steel-dark underline" href="/contact/">Laat het ons weten</a>.</p>
+    }
+</section>

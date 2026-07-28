@@ -1,0 +1,6 @@
+## Umbraco-generated
+appsettings-schema.*.json
+umbraco/
+!umbraco/models/
+wwwroot/media/
+wwwroot/css/site.css

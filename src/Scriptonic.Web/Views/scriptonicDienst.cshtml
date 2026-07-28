@@ -1,0 +1,39 @@
+﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = Model.Value<string>("seoTitle") ?? Model.Name;
+    ViewData["MetaDescription"] = Model.Value<string>("seoDescription") ?? Model.Value<string>("summary");
+    string[] features = (Model.Value<string>("features") ?? "")
+        .Replace("\r\n", "\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+}
+
+<section class="mx-auto max-w-3xl px-4 py-16">
+    <p class="braced font-brand text-sm font-bold text-steel-dark">dienst</p>
+    <h1 class="mt-2 text-4xl">@(Model.Value<string>("icon")) @Model.Name</h1>
+    <p class="mt-4 text-lg text-ink-soft">@(Model.Value<string>("summary"))</p>
+
+    <div class="prose-block mt-8">
+        <partial name="_Paragraphs" model="@(Model.Value<string>("bodyText"))" />
+    </div>
+
+    @if (features.Length > 0)
+    {
+        <div class="card mt-10">
+            <h2 class="text-lg">Wat je krijgt</h2>
+            <ul class="mt-4 space-y-2">
+                @foreach (string feature in features)
+                {
+                    <li class="flex items-start gap-2 text-sm text-ink-soft">
+                        <span class="mt-0.5 font-brand font-bold text-steel-dark">✓</span> @feature.Trim()
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+
+    <div class="mt-12 rounded-lg bg-ink p-8 text-center text-white">
+        <h2 class="text-2xl">Hier iets mee<span class="text-steel">?</span></h2>
+        <p class="mt-2 text-white/75">Plan een vrijblijvende kennismaking en ontdek wat we voor je kunnen bouwen.</p>
+        <a href="/contact/" class="btn-primary mt-6">Neem contact op</a>
+    </div>
+</section>
