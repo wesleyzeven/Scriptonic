@@ -11,8 +11,9 @@
     string ctaLabel = Model.Value<string>("ctaLabel") ?? "Plan een kennismaking";
 }
 
-<section class="bg-ink text-white">
-    <div class="mx-auto max-w-6xl px-4 py-24 sm:py-32">
+<section class="relative overflow-hidden bg-ink text-white">
+    <canvas id="hero-canvas" class="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true"></canvas>
+    <div class="relative mx-auto max-w-6xl px-4 py-24 sm:py-32">
         <p class="braced font-brand text-sm font-bold text-white/70">@(Model.Value<string>("tagline"))</p>
         <h1 class="mt-4 max-w-3xl text-4xl leading-tight sm:text-5xl">
             @(Model.Value<string>("heroTitle"))
@@ -109,3 +110,7 @@
         </div>
     </div>
 </section>
+
+@section Scripts {
+    <script defer src="/js/hero-constellation.js"></script>
+}
