@@ -11,8 +11,14 @@
 
   gsap.registerPlugin(ScrollTrigger);
 
-  /* ---- Smooth scroll ---------------------------------------------------- */
-  if (window.Lenis) {
+  // Mobile URL-bar show/hide fires resize events during scroll; refreshing all
+  // triggers on each one causes forced reflows mid-scroll (visible freezes).
+  ScrollTrigger.config({ ignoreMobileResize: true });
+
+  var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  /* ---- Smooth scroll (desktop only — touch scrolling stays native) ------ */
+  if (window.Lenis && finePointer) {
     var lenis = new Lenis({ duration: 1.05 });
     lenis.on("scroll", ScrollTrigger.update);
     gsap.ticker.add(function (time) { lenis.raf(time * 1000); });
@@ -130,7 +136,7 @@
   }
 
   /* ---- Magnetic buttons (fine pointers only) ---------------------------- */
-  if (window.matchMedia("(pointer: fine)").matches) {
+  if (finePointer) {
     document.querySelectorAll(".btn-primary, .btn-secondary, .btn-light").forEach(function (btn) {
       var qx = gsap.quickTo(btn, "x", { duration: 0.35, ease: "power3.out" });
       var qy = gsap.quickTo(btn, "y", { duration: 0.35, ease: "power3.out" });

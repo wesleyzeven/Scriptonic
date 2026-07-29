@@ -18,7 +18,10 @@
   var LINK_DIST = 110;
   var IDLE_AFTER_MS = 2600;
 
-  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  // Coarse-pointer devices get a lower pixel-density cap: fill-rate is the
+  // bottleneck on phones and the drift field doesn't need retina crispness.
+  var coarsePointer = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+  var dpr = Math.min(window.devicePixelRatio || 1, coarsePointer ? 1.5 : 2);
   var width = 0, height = 0;
   var particles = [];
   var homes = [];
@@ -44,10 +47,15 @@
     return s;
   }
 
-  /* Sample "{ S }" rendered offscreen into target points for the idle formation. */
-  function buildHomes(count) {
+  /* Sample "{ S }" rendered offscreen into target points for the idle formation.
+     Sampling (getImageData) is expensive, so results are cached per count and
+     only invalidated when the brand font arrives. */
+  var sampleCache = null;
+  var SAMPLE_W = 480, SAMPLE_H = 240;
+  function samplePoints(count) {
+    if (sampleCache && sampleCache.count === count) return sampleCache.pts;
     var off = document.createElement("canvas");
-    var ow = 480, oh = 240;
+    var ow = SAMPLE_W, oh = SAMPLE_H;
     off.width = ow; off.height = oh;
     var oc = off.getContext("2d");
     oc.font = 'bold 170px "Courier Prime", "Courier New", monospace';
@@ -64,6 +72,13 @@
           if (data[(y * ow + x) * 4 + 3] > 128) pts.push([x, y]);
       if (pts.length <= count) break;
     }
+    sampleCache = { count: count, pts: pts };
+    return pts;
+  }
+
+  function buildHomes(count) {
+    var ow = SAMPLE_W, oh = SAMPLE_H;
+    var pts = samplePoints(count);
     // Map sampled points into a box inside the hero: right of the copy on wide
     // screens, centered behind it on narrow ones.
     var wide = width >= 1024;
@@ -104,10 +119,15 @@
       particles[j].home = homes.length ? homes[j % homes.length] : null;
   }
 
-  function resize() {
+  function resize(force) {
     var rect = canvas.parentElement.getBoundingClientRect();
-    width = Math.max(rect.width, 1);
-    height = Math.max(rect.height, 1);
+    var w = Math.max(rect.width, 1);
+    var h = Math.max(rect.height, 1);
+    // Mobile URL-bar resizes fire this without the hero actually changing;
+    // rebuilding the particle field there causes a mid-scroll hitch.
+    if (!force && Math.abs(w - width) < 2 && Math.abs(h - height) < 2) return;
+    width = w;
+    height = h;
     canvas.width = width * dpr;
     canvas.height = height * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -233,7 +253,7 @@
   resize();
   pointer.lastMove = performance.now() - IDLE_AFTER_MS; // start assembled
   // Re-sample formation once the brand font is in, so the S uses Courier Prime.
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { spriteCache = {}; resize(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { spriteCache = {}; sampleCache = null; resize(true); });
 
   var resizeTimer = 0;
   function queueResize() {
