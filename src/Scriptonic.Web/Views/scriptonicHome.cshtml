@@ -55,8 +55,10 @@
 
 @if (portfolio is not null)
 {
-    <section class="bg-steel-soft/60">
-        <div class="mx-auto max-w-6xl px-4 py-20">
+    <section class="relative overflow-hidden bg-steel-soft/60">
+        <span data-brace-l aria-hidden="true" class="pointer-events-none absolute -left-6 top-1/2 -translate-y-1/2 select-none font-brand text-[18rem] font-bold leading-none text-steel/10 sm:-left-2">{</span>
+        <span data-brace-r aria-hidden="true" class="pointer-events-none absolute -right-6 top-1/2 -translate-y-1/2 select-none font-brand text-[18rem] font-bold leading-none text-steel/10 sm:-right-2">}</span>
+        <div class="relative mx-auto max-w-6xl px-4 py-20">
             <p class="braced font-brand text-sm font-bold text-steel-dark">portfolio</p>
             <h2 class="mt-2 text-3xl">Recent werk</h2>
             <div class="mt-10 grid gap-6 md:grid-cols-3">
@@ -89,24 +91,77 @@
     </section>
 }
 
-<section class="mx-auto max-w-6xl px-4 py-20">
+<section id="process" class="mx-auto max-w-6xl px-4 py-20">
     <p class="braced font-brand text-sm font-bold text-steel-dark">werkwijze</p>
     <h2 class="mt-2 text-3xl">Zo werkt het</h2>
-    <div class="mt-10 grid gap-10 md:grid-cols-3">
-        <div>
-            <p class="font-brand text-4xl font-bold text-steel">01</p>
-            <h3 class="mt-2 text-lg">Kennismaken &amp; plan</h3>
-            <p class="mt-2 text-sm leading-relaxed text-ink-soft">We beginnen met een gratis gesprek. Daarna krijg je een helder voorstel: wat we bouwen, wat het kost en wanneer het er staat.</p>
+    <div class="mt-10 gap-16 lg:grid lg:grid-cols-2">
+        <div class="space-y-10 lg:space-y-0">
+            <div data-step class="process-step lg:flex lg:min-h-[50vh] lg:flex-col lg:justify-center">
+                <p class="font-brand text-4xl font-bold text-steel">01</p>
+                <h3 class="mt-2 text-lg">Kennismaken &amp; plan</h3>
+                <p class="mt-2 max-w-md text-sm leading-relaxed text-ink-soft">We beginnen met een gratis gesprek. Daarna krijg je een helder voorstel: wat we bouwen, wat het kost en wanneer het er staat.</p>
+            </div>
+            <div data-step class="process-step lg:flex lg:min-h-[50vh] lg:flex-col lg:justify-center">
+                <p class="font-brand text-4xl font-bold text-steel">02</p>
+                <h3 class="mt-2 text-lg">Bouwen &amp; meekijken</h3>
+                <p class="mt-2 max-w-md text-sm leading-relaxed text-ink-soft">Je kijkt live mee op een acceptatieomgeving terwijl we bouwen. Feedback verwerken we direct — geen verrassingen bij oplevering.</p>
+            </div>
+            <div data-step class="process-step lg:flex lg:min-h-[50vh] lg:flex-col lg:justify-center">
+                <p class="font-brand text-4xl font-bold text-steel">03</p>
+                <h3 class="mt-2 text-lg">Live &amp; verder</h3>
+                <p class="mt-2 max-w-md text-sm leading-relaxed text-ink-soft">Na livegang blijven we aan boord: hosting, updates, back-ups en doorontwikkeling. Via het klantportaal volg je facturen en offertes.</p>
+            </div>
         </div>
-        <div>
-            <p class="font-brand text-4xl font-bold text-steel">02</p>
-            <h3 class="mt-2 text-lg">Bouwen &amp; meekijken</h3>
-            <p class="mt-2 text-sm leading-relaxed text-ink-soft">Je kijkt live mee op een acceptatieomgeving terwijl we bouwen. Feedback verwerken we direct — geen verrassingen bij oplevering.</p>
-        </div>
-        <div>
-            <p class="font-brand text-4xl font-bold text-steel">03</p>
-            <h3 class="mt-2 text-lg">Live &amp; verder</h3>
-            <p class="mt-2 text-sm leading-relaxed text-ink-soft">Na livegang blijven we aan boord: hosting, updates, back-ups en doorontwikkeling. Via het klantportaal volg je facturen en offertes.</p>
+        <div class="hidden lg:block">
+            <div class="sticky top-28 flex min-h-[50vh] items-center">
+                <svg id="process-wireframe" viewBox="0 0 420 320" class="w-full" aria-hidden="true" fill="none">
+                    <!-- Browser chrome -->
+                    <g data-wf-outline>
+                        <rect x="10" y="10" width="400" height="300" rx="10" stroke="#4f709a" stroke-width="2"/>
+                        <line x1="10" y1="48" x2="410" y2="48" stroke="#4f709a" stroke-width="2"/>
+                        <circle cx="32" cy="29" r="5" stroke="#6d8fb5" stroke-width="2"/>
+                        <circle cx="50" cy="29" r="5" stroke="#6d8fb5" stroke-width="2"/>
+                        <circle cx="68" cy="29" r="5" stroke="#6d8fb5" stroke-width="2"/>
+                        <rect x="90" y="19" width="240" height="20" rx="6" stroke="#6d8fb5" stroke-width="1.5"/>
+                    </g>
+                    <!-- Dashed layout skeleton (stage 1: plan) -->
+                    <g data-wf-outline stroke="#6d8fb5" stroke-width="1.5" stroke-dasharray="6 5">
+                        <rect x="28" y="64" width="364" height="30" rx="4"/>
+                        <rect x="28" y="106" width="364" height="80" rx="4"/>
+                        <rect x="28" y="198" width="112" height="62" rx="4"/>
+                        <rect x="154" y="198" width="112" height="62" rx="4"/>
+                        <rect x="280" y="198" width="112" height="62" rx="4"/>
+                        <rect x="28" y="272" width="364" height="24" rx="4"/>
+                    </g>
+                    <!-- Solid blocks (stage 2: build) -->
+                    <g data-wf-fill>
+                        <rect x="28" y="64" width="364" height="30" rx="4" fill="#eef2f7"/>
+                        <rect x="40" y="73" width="52" height="12" rx="3" fill="#4f709a"/>
+                        <rect x="300" y="73" width="80" height="12" rx="3" fill="#9db4cf"/>
+                    </g>
+                    <g data-wf-fill>
+                        <rect x="28" y="106" width="364" height="80" rx="4" fill="#35516f"/>
+                        <rect x="48" y="126" width="150" height="14" rx="3" fill="#fafaf8"/>
+                        <rect x="48" y="148" width="200" height="8" rx="3" fill="#9db4cf"/>
+                        <rect x="48" y="162" width="64" height="14" rx="4" fill="#6d8fb5"/>
+                    </g>
+                    <g data-wf-fill>
+                        <rect x="28" y="198" width="112" height="62" rx="4" fill="#eef2f7"/>
+                        <rect x="154" y="198" width="112" height="62" rx="4" fill="#eef2f7"/>
+                        <rect x="280" y="198" width="112" height="62" rx="4" fill="#eef2f7"/>
+                        <rect x="38" y="208" width="60" height="8" rx="3" fill="#6d8fb5"/>
+                        <rect x="164" y="208" width="60" height="8" rx="3" fill="#6d8fb5"/>
+                        <rect x="290" y="208" width="60" height="8" rx="3" fill="#6d8fb5"/>
+                        <rect x="28" y="272" width="364" height="24" rx="4" fill="#16181d"/>
+                    </g>
+                    <!-- Live state (stage 3) -->
+                    <g data-wf-live font-family="Courier Prime, Courier New, monospace">
+                        <text x="102" y="33" font-size="12" fill="#4f709a">https://scriptonic.nl</text>
+                        <circle data-wf-livedot cx="380" cy="29" r="5" fill="#34d399"/>
+                        <text x="340" y="33" font-size="11" fill="#34d399">live</text>
+                    </g>
+                </svg>
+            </div>
         </div>
     </div>
 </section>

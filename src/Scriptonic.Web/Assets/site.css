@@ -28,6 +28,17 @@
     display: none !important;
   }
 
+  /* Lenis smooth scroll */
+  html.lenis, html.lenis body {
+    height: auto;
+  }
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
   h1, h2, h3 {
     @apply font-brand font-bold tracking-tight;
   }
@@ -99,6 +110,14 @@
   /* Curly-brace flourish around small labels, echoing the logo. */
   .braced::before { content: "{ "; @apply text-steel; }
   .braced::after { content: " }"; @apply text-steel; }
+
+  /* Process steps dim until active while the wireframe assembles (desktop only). */
+  .process-step {
+    @apply transition-opacity duration-500 lg:opacity-35;
+  }
+  .process-step.is-active {
+    @apply lg:opacity-100;
+  }
 
   .tag {
     @apply inline-flex items-center rounded bg-steel-soft px-2.5 py-0.5 font-brand text-xs font-bold text-steel-deep;
