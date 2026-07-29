@@ -59,14 +59,16 @@
      Sampling (getImageData) is expensive, so results are cached per count and
      only invalidated when the brand font arrives. */
   var sampleCache = null;
-  var SAMPLE_W = 480, SAMPLE_H = 240;
+  // Wide enough that "{ S }" at the sample font size is not clipped
+  // (5 monospace chars x ~0.6em); clipping the braces blurs the formation.
+  var SAMPLE_W = 720, SAMPLE_H = 300;
   function samplePoints(count) {
     if (sampleCache && sampleCache.count === count) return sampleCache.pts;
     var off = document.createElement("canvas");
     var ow = SAMPLE_W, oh = SAMPLE_H;
     off.width = ow; off.height = oh;
     var oc = off.getContext("2d");
-    oc.font = 'bold 170px "Courier Prime", "Courier New", monospace';
+    oc.font = 'bold 220px "Courier Prime", "Courier New", monospace';
     oc.textAlign = "center";
     oc.textBaseline = "middle";
     oc.fillStyle = "#fff";
@@ -90,9 +92,9 @@
     // Map sampled points into a box inside the hero: right of the copy on wide
     // screens, centered behind it on narrow ones.
     var wide = width >= 1024;
-    var boxW = Math.min(wide ? width * 0.34 : width * 0.8, 560);
+    var boxW = Math.min(wide ? width * 0.46 : width * 0.92, 780);
     var boxH = boxW * (oh / ow);
-    var cx = wide ? width * 0.76 : width * 0.5;
+    var cx = wide ? width * 0.72 : width * 0.5;
     var cy = height * 0.5;
     homes = pts.map(function (p) {
       return {
@@ -103,7 +105,7 @@
   }
 
   function makeParticles() {
-    var target = Math.round(Math.min(Math.max(width * height / 9000, 60), 190));
+    var target = Math.round(Math.min(Math.max(width * height / 7000, 70), 240));
     particles = [];
     for (var i = 0; i < target; i++) {
       var size = 11 + Math.random() * 11;
@@ -177,7 +179,9 @@
     for (var k = 0; k < particles.length; k++) {
       var p = particles[k];
       var img = sprite(p.glyph, p.color, p.size);
-      ctx.globalAlpha = p.alpha * (0.6 + focus * 0.4);
+      // Drifting glyphs keep their soft varied alpha; once the formation
+      // assembles they converge to near-opaque so the { S } reads clearly.
+      ctx.globalAlpha = p.alpha * 0.75 + (0.95 - p.alpha * 0.75) * focus;
       ctx.save();
       ctx.translate(p.x, p.y);
       ctx.rotate(p.rot * (1 - focus));
