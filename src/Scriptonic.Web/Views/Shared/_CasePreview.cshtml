@@ -1,0 +1,20 @@
+@model IPublishedContent
+@* Voorbeeldfoto bovenaan een portfolio-kaart. Zolang de redacteur nog geen
+   afbeelding heeft gekozen tonen we een merkgebonden placeholder in plaats van
+   een gat in de kaart. Hoort binnen een element met class "card group". *@
+@{
+    string? previewUrl = Model.Value<IEnumerable<IPublishedContent>>("previewImage")?.FirstOrDefault()?.Url();
+}
+<div class="-mx-6 -mt-6 mb-5 overflow-hidden rounded-t-lg border-b border-line">
+    @if (!string.IsNullOrEmpty(previewUrl))
+    {
+        <img src="@previewUrl" alt="@Model.Name" loading="lazy"
+             class="aspect-16/10 w-full object-cover transition duration-300 group-hover:scale-105" />
+    }
+    else
+    {
+        <div class="flex aspect-16/10 w-full items-center justify-center bg-linear-to-br from-steel-soft via-white to-steel/25">
+            <img src="/img/logo-mark.png" alt="" class="h-12 w-auto opacity-30" />
+        </div>
+    }
+</div>

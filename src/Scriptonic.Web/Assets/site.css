@@ -34,6 +34,44 @@
 }
 
 @layer components {
+  /* Header: regular height everywhere; the home page starts oversized and
+     shrinks to that same regular height once the visitor scrolls away from
+     the top (data-top is toggled on the header by Alpine). */
+  .site-header-bar {
+    height: 4rem;
+    transition: height 300ms ease;
+  }
+
+  .site-header-logo {
+    height: 2.25rem;
+    transition: height 300ms ease;
+  }
+
+  .site-header[data-top="true"] .site-header-bar {
+    height: 5.5rem;
+  }
+
+  .site-header[data-top="true"] .site-header-logo {
+    height: 3rem;
+  }
+
+  @media (min-width: 48rem) {
+    .site-header[data-top="true"] .site-header-bar {
+      height: 7rem;
+    }
+
+    .site-header[data-top="true"] .site-header-logo {
+      height: 4rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .site-header-bar,
+    .site-header-logo {
+      transition: none;
+    }
+  }
+
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-md bg-steel-dark px-6 py-3 font-brand font-bold text-white transition hover:bg-steel-deep;
   }

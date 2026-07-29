@@ -2,6 +2,8 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "";
+    // Home opens with the oversized logo bar; it shrinks on scroll.
+    ViewData["LargeHeader"] = true;
     ViewData["MetaDescription"] = Model.Value<string>("seoDescription");
     var diensten = Model.Children().FirstOrDefault(c => c.ContentType.Alias == SiteAliases.Diensten);
     var portfolio = Model.Children().FirstOrDefault(c => c.ContentType.Alias == SiteAliases.Portfolio);
@@ -59,7 +61,8 @@
             <div class="mt-10 grid gap-6 md:grid-cols-3">
                 @foreach (var item in portfolio.Children().Where(c => c.ContentType.Alias == SiteAliases.Case).Take(3))
                 {
-                    <a href="@item.Url()" class="card group">
+                    <a href="@item.Url()" class="card group overflow-hidden">
+                        <partial name="_CasePreview" model="item" />
                         <div class="flex items-center justify-between gap-2">
                             <span class="tag">@(item.Value<string>("projectType"))</span>
                             <span class="font-brand text-xs text-ink-soft">@(item.Value<string>("status"))</span>
@@ -74,8 +77,21 @@
     </section>
 }
 
+@if (contact is not null)
+{
+    <section class="bg-ink text-white">
+        <div class="mx-auto max-w-6xl px-4 py-16 text-center">
+            <h2 class="text-3xl">Iets moois bouwen<span class="text-steel">?</span></h2>
+            <p class="mx-auto mt-4 max-w-xl text-white/75">Vertel ons wat je voor ogen hebt — we denken vrijblijvend mee.</p>
+            <a href="@contact.Url()" class="btn-primary mt-8">@ctaLabel</a>
+        </div>
+    </section>
+}
+
 <section class="mx-auto max-w-6xl px-4 py-20">
-    <div class="grid gap-10 md:grid-cols-3">
+    <p class="braced font-brand text-sm font-bold text-steel-dark">werkwijze</p>
+    <h2 class="mt-2 text-3xl">Zo werkt het</h2>
+    <div class="mt-10 grid gap-10 md:grid-cols-3">
         <div>
             <p class="font-brand text-4xl font-bold text-steel">01</p>
             <h3 class="mt-2 text-lg">Kennismaken &amp; plan</h3>
@@ -93,14 +109,3 @@
         </div>
     </div>
 </section>
-
-@if (contact is not null)
-{
-    <section class="bg-ink text-white">
-        <div class="mx-auto max-w-6xl px-4 py-16 text-center">
-            <h2 class="text-3xl">Iets moois bouwen<span class="text-steel">?</span></h2>
-            <p class="mx-auto mt-4 max-w-xl text-white/75">Vertel ons wat je voor ogen hebt — we denken vrijblijvend mee.</p>
-            <a href="@contact.Url()" class="btn-primary mt-8">@ctaLabel</a>
-        </div>
-    </section>
-}

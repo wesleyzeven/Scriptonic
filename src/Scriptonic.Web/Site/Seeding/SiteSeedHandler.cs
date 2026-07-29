@@ -162,9 +162,11 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         IContentType? existing = _contentTypeService.Get(SiteAliases.Case);
         if (existing is not null)
         {
+            await EnsureCasePreviewImageAsync(existing);
             return existing;
         }
 
+        IDataType casePreviewPicker = await RequireDataTypeAsync(Constants.PropertyEditors.Aliases.MediaPicker3, "Media Picker");
         var type = await NewTypeAsync(SiteAliases.Case, "Case (portfolio item)", "icon-star color-orange", "inhoud", "Inhoud");
         await AddTextAsync(type, "client", "Opdrachtgever", 1);
         await AddTextAsync(type, "projectType", "Soort project", 2, description: "Bijv. Website, Game, Webshop.");
@@ -173,10 +175,49 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         await AddTextAsync(type, "summary", "Samenvatting", 5, area: true);
         await AddTextAsync(type, "bodyText", "Tekst", 6, area: true, description: "Alinea's scheiden met een lege regel.");
         await AddTextAsync(type, "tags", "Tags", 7, description: "Kommagescheiden, bijv. Umbraco, .NET, Unity.");
+        AddProperty(type, casePreviewPicker, CasePreviewImageAlias, "Voorbeeldfoto", 8, CasePreviewImageDescription);
         await AddSeoGroupAsync(type);
         FinishType(type, template);
         await _contentTypeService.CreateAsync(type, Constants.Security.SuperUserKey);
         return type;
+    }
+
+    private const string CasePreviewImageAlias = "previewImage";
+    private const string CasePreviewImageDescription =
+        "Afbeelding op de portfolio-kaarten (schermafdruk of foto). Zonder afbeelding tonen we een neutrale placeholder.";
+
+    /// <summary>
+    /// Adds the portfolio preview image to a case type that was seeded before
+    /// this property existed, so sites from an earlier boot get it too.
+    /// </summary>
+    private async Task EnsureCasePreviewImageAsync(IContentType caseType)
+    {
+        if (caseType.PropertyTypes.Any(p => p.Alias == CasePreviewImageAlias))
+        {
+            return;
+        }
+
+        IDataType mediaPicker = await RequireDataTypeAsync(Constants.PropertyEditors.Aliases.MediaPicker3, "Media Picker");
+        string groupAlias = caseType.PropertyGroups.FirstOrDefault(g => g.Alias == "inhoud")?.Alias
+            ?? caseType.PropertyGroups.First().Alias!;
+
+        var property = new PropertyType(_shortStringHelper, mediaPicker, CasePreviewImageAlias)
+        {
+            Name = "Voorbeeldfoto",
+            Description = CasePreviewImageDescription,
+            SortOrder = 8,
+        };
+        caseType.AddPropertyType(property, groupAlias);
+
+        var attempt = await _contentTypeService.UpdateAsync(caseType, Constants.Security.SuperUserKey);
+        if (attempt.Success)
+        {
+            _logger.LogInformation("Added {Property} to {Alias}", CasePreviewImageAlias, SiteAliases.Case);
+        }
+        else
+        {
+            _logger.LogWarning("Could not add {Property} to {Alias}: {Status}", CasePreviewImageAlias, SiteAliases.Case, attempt.Result);
+        }
     }
 
     private async Task<IContentType> EnsureListTypeAsync(string alias, string name, string icon, ITemplate template, IContentType childType)

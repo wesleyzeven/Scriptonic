@@ -1,8 +1,20 @@
 @model Scriptonic.Web.ViewComponents.SiteHeaderModel
-<header class="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur" x-data="{ open: false }">
-    <div class="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+@{
+    // data-top drives the bar/logo height in site.css. It is rendered
+    // server-side so the first paint is already right (Alpine loads deferred),
+    // after which Alpine keeps it in sync while scrolling. The two thresholds
+    // give the toggle hysteresis, so a header that shrinks — and thereby
+    // shortens the document — can't immediately flip back.
+    string atTop = Model.Large ? "true" : "false";
+}
+<header class="site-header sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur"
+        data-top="@atTop"
+        x-data="{ open: false, grows: @atTop, atTop: @atTop }"
+        x-bind:data-top="atTop.toString()"
+        @@scroll.window="atTop = grows && window.scrollY < (atTop ? 32 : 8)">
+    <div class="site-header-bar mx-auto flex max-w-6xl items-center justify-between gap-4 px-4">
         <a href="/" class="flex items-center gap-3">
-            <img src="/img/logo.png" alt="Scriptonic" class="h-9 w-auto" />
+            <img src="/img/logo.png" alt="Scriptonic" class="site-header-logo w-auto" />
         </a>
 
         <nav class="hidden items-center gap-6 font-brand text-sm font-bold md:flex">

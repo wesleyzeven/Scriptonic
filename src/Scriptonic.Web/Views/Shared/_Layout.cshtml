@@ -51,7 +51,7 @@
     }
 </head>
 <body class="flex min-h-screen flex-col">
-    @await Component.InvokeAsync("SiteHeader")
+    @await Component.InvokeAsync("SiteHeader", new { large = ViewData["LargeHeader"] is true })
 
     <main class="flex-1">
         @RenderBody()
@@ -60,8 +60,9 @@
     <footer class="mt-20 bg-ink text-white">
         <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-3">
             <div>
-                <p class="font-brand text-xl font-bold"><span class="text-steel">{</span> S <span class="text-steel">}</span> criptonic</p>
-                <p class="mt-2 text-sm text-white/70">Websites, games &amp; maatwerk software.<br />Gebouwd, gehost en beheerd door één team.</p>
+                @* White-ink variant of the logo; the regular one is near-black and would disappear here. *@
+                <img src="/img/logo-white.png" alt="Scriptonic" class="h-10 w-auto" />
+                <p class="mt-4 text-sm text-white/70">Websites, games &amp; maatwerk software.<br />Gebouwd, gehost en beheerd door één team.</p>
             </div>
             <div class="text-sm">
                 <p class="braced font-brand font-bold">menu</p>
