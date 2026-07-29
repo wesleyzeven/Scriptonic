@@ -10,6 +10,14 @@
   var canvas = document.getElementById("hero-canvas");
   if (!canvas || !canvas.getContext) return;
 
+  // If the stylesheet that positions the canvas absolute didn't load (stale
+  // cache, blocked CSS), the canvas sits in flow and sizing it to its parent
+  // would grow the hero unboundedly. Refuse to run rather than break layout.
+  if (getComputedStyle(canvas).position !== "absolute") {
+    canvas.width = canvas.height = 0;
+    return;
+  }
+
   var ctx = canvas.getContext("2d");
   var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
