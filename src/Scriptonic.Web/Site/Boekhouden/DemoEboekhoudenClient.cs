@@ -25,6 +25,21 @@ public class DemoEboekhoudenStore
             Website = "https://www.voorbeeld.nl",
             VatNumber = "NL123456789B01",
         },
+        // Second relation so the email auto-link is demonstrable in demo mode:
+        // create a member with this email and the link fills itself in.
+        [1002] = new EboekRelation
+        {
+            Id = 1002,
+            Type = "B",
+            Code = "DEMO002",
+            Name = "Tweede Demo B.V.",
+            Contact = "Tessa Test",
+            Address = "Proefpad 2",
+            PostalCode = "5678 CD",
+            City = "Rotterdam",
+            Country = "Nederland",
+            EmailAddress = "klant2@scriptonic.nl",
+        },
     };
 }
 
@@ -67,6 +82,14 @@ public class DemoEboekhoudenClient : IEboekhoudenClient
     {
         _store.Relations.TryGetValue(relationId, out EboekRelation? relation);
         return Task.FromResult(relation);
+    }
+
+    public Task<EboekRelation?> FindRelationByEmailAsync(string email, CancellationToken ct = default)
+    {
+        EboekRelation? match = _store.Relations.Values.FirstOrDefault(r =>
+            string.Equals(r.EmailAddress, email, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(r.EmailAddressInvoice, email, StringComparison.OrdinalIgnoreCase));
+        return Task.FromResult(match);
     }
 
     public Task UpdateRelationAsync(long relationId, EboekRelationUpdate update, CancellationToken ct = default)

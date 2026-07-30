@@ -11,5 +11,6 @@ public class SiteSeedComposer : IComposer
     {
         builder.Services.AddScoped<SiteContentService>();
         builder.AddNotificationAsyncHandler<UmbracoApplicationStartedNotification, SiteSeedHandler>();
+        builder.AddNotificationAsyncHandler<MemberSavingNotification, MemberRelationAutoLinkHandler>();
     }
 }

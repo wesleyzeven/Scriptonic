@@ -89,6 +89,28 @@ public class EboekhoudenClient : IEboekhoudenClient
     public Task<EboekRelation?> GetRelationAsync(long relationId, CancellationToken ct = default)
         => GetAsync<EboekRelation>($"v1/relation/{relationId}", ct);
 
+    public async Task<EboekRelation?> FindRelationByEmailAsync(string email, CancellationToken ct = default)
+    {
+        // The list endpoint returns sparse objects (id/type/code only), so
+        // fetch each relation's detail and compare email addresses there.
+        var list = await GetAsync<EboekhoudenListResponse<EboekRelation>>("v1/relation?limit=500", ct);
+        foreach (EboekRelation sparse in list?.Items ?? [])
+        {
+            ct.ThrowIfCancellationRequested();
+            EboekRelation? relation = await GetRelationAsync(sparse.Id, ct);
+            if (relation is null)
+            {
+                continue;
+            }
+            if (string.Equals(relation.EmailAddress, email, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(relation.EmailAddressInvoice, email, StringComparison.OrdinalIgnoreCase))
+            {
+                return relation;
+            }
+        }
+        return null;
+    }
+
     public async Task UpdateRelationAsync(long relationId, EboekRelationUpdate update, CancellationToken ct = default)
     {
         using HttpRequestMessage request = await BuildRequestAsync(HttpMethod.Patch, $"v1/relation/{relationId}", ct);

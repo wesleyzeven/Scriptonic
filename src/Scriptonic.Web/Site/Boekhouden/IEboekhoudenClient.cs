@@ -16,5 +16,8 @@ public interface IEboekhoudenClient
 
     Task<EboekRelation?> GetRelationAsync(long relationId, CancellationToken ct = default);
 
+    /// <summary>Finds the relation whose (invoice) email address matches, or null.</summary>
+    Task<EboekRelation?> FindRelationByEmailAsync(string email, CancellationToken ct = default);
+
     Task UpdateRelationAsync(long relationId, EboekRelationUpdate update, CancellationToken ct = default);
 }
