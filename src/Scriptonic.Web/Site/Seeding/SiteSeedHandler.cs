@@ -415,6 +415,31 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
             _memberService.AssignRoles([member.Id], [SiteAliases.MemberGroup]);
         }
         _logger.LogInformation("Seeded demo portal member {Email}", email);
+
+        // Second demo member with ONLY an email address: exercises the
+        // e-mail auto-link (MemberRelationAutoLinkHandler fills the relation
+        // from the demo store's klant2 entry during the save).
+        const string email2 = "klant2@scriptonic.nl";
+        if (_memberService.GetByEmail(email2) is null)
+        {
+            MemberIdentityUser identity2 = MemberIdentityUser.CreateNew(email2, email2, SiteAliases.MemberType, isApproved: true, name: "Klant 2");
+            var created2 = await _memberManager.CreateAsync(identity2, _options.Portal.DemoMemberPassword);
+            if (created2.Succeeded)
+            {
+                IMember? member2 = _memberService.GetByEmail(email2);
+                if (member2 is not null)
+                {
+                    // No relation values on purpose; save triggers the auto-link.
+                    _memberService.Save(member2);
+                    _memberService.AssignRoles([member2.Id], [SiteAliases.MemberGroup]);
+                }
+                _logger.LogInformation("Seeded second demo portal member {Email} (auto-link test)", email2);
+            }
+            else
+            {
+                _logger.LogWarning("Second demo member creation failed: {Errors}", string.Join("; ", created2.Errors.Select(e => e.Description)));
+            }
+        }
     }
 
     // ---- Content ---------------------------------------------------------
