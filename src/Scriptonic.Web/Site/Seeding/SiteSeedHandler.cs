@@ -392,29 +392,27 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
     private async Task EnsureDemoMemberAsync()
     {
         string email = _options.Portal.DemoMemberEmail;
-        if (_memberService.GetByEmail(email) is not null)
+        if (_memberService.GetByEmail(email) is null)
         {
-            return;
-        }
+            MemberIdentityUser identityUser = MemberIdentityUser.CreateNew(email, email, SiteAliases.MemberType, isApproved: true, name: "Demo Klant B.V.");
+            var created = await _memberManager.CreateAsync(identityUser, _options.Portal.DemoMemberPassword);
+            if (!created.Succeeded)
+            {
+                _logger.LogWarning("Demo member creation failed: {Errors}", string.Join("; ", created.Errors.Select(e => e.Description)));
+                return;
+            }
 
-        MemberIdentityUser identityUser = MemberIdentityUser.CreateNew(email, email, SiteAliases.MemberType, isApproved: true, name: "Demo Klant B.V.");
-        var created = await _memberManager.CreateAsync(identityUser, _options.Portal.DemoMemberPassword);
-        if (!created.Succeeded)
-        {
-            _logger.LogWarning("Demo member creation failed: {Errors}", string.Join("; ", created.Errors.Select(e => e.Description)));
-            return;
+            IMember? member = _memberService.GetByEmail(email);
+            if (member is not null)
+            {
+                member.SetValue("relationId", 1001);
+                member.SetValue("relationCode", "DEMO001");
+                member.SetValue("companyName", "Demo Klant B.V.");
+                _memberService.Save(member);
+                _memberService.AssignRoles([member.Id], [SiteAliases.MemberGroup]);
+            }
+            _logger.LogInformation("Seeded demo portal member {Email}", email);
         }
-
-        IMember? member = _memberService.GetByEmail(email);
-        if (member is not null)
-        {
-            member.SetValue("relationId", 1001);
-            member.SetValue("relationCode", "DEMO001");
-            member.SetValue("companyName", "Demo Klant B.V.");
-            _memberService.Save(member);
-            _memberService.AssignRoles([member.Id], [SiteAliases.MemberGroup]);
-        }
-        _logger.LogInformation("Seeded demo portal member {Email}", email);
 
         // Second demo member with ONLY an email address: exercises the
         // e-mail auto-link (MemberRelationAutoLinkHandler fills the relation
