@@ -2,7 +2,7 @@ name: Deploy Acceptance
 
 # Builds the Scriptonic image and (re)deploys the acceptance stack on the
 # homelab. Runs on a self-hosted runner that has Docker available locally and
-# can write to C:\DockerProjects\Scriptonic\acceptance.
+# can write to C:/DockerProjects/Scriptonic/acceptance.
 #
 # The runner must be registered in the repo with the labels:
 #   self-hosted, homelab, windows
@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  COMPOSE_DIR: C:\DockerProjects\Scriptonic\acceptance
+  COMPOSE_DIR: C:/DockerProjects/Scriptonic/acceptance
   IMAGE_TAG: acceptance
 
 jobs:
@@ -61,8 +61,8 @@ jobs:
       - name: Verify .env exists on host
         shell: powershell
         run: |
-          if (-not (Test-Path "$env:COMPOSE_DIR\.env")) {
-            Write-Error "Missing $env:COMPOSE_DIR\.env. Copy .env.example to .env on the host before the first deploy."
+          if (-not (Test-Path "$env:COMPOSE_DIR/.env")) {
+            Write-Error "Missing $env:COMPOSE_DIR/.env. Copy .env.example to .env on the host before the first deploy."
             exit 1
           }
 

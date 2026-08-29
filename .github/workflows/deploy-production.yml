@@ -2,7 +2,7 @@ name: Deploy Production
 
 # Builds the Scriptonic image and (re)deploys the production stack on the
 # homelab. Runs on a self-hosted runner that has Docker available locally and
-# can write to C:\DockerProjects\Scriptonic\production.
+# can write to C:/DockerProjects/Scriptonic/production.
 #
 # Triggers:
 #   - push to main (every commit to main goes to production)
@@ -22,7 +22,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  COMPOSE_DIR: C:\DockerProjects\Scriptonic\production
+  COMPOSE_DIR: C:/DockerProjects/Scriptonic/production
   IMAGE_TAG: production
 
 jobs:
@@ -66,8 +66,8 @@ jobs:
       - name: Verify .env exists on host
         shell: powershell
         run: |
-          if (-not (Test-Path "$env:COMPOSE_DIR\.env")) {
-            Write-Error "Missing $env:COMPOSE_DIR\.env. Copy .env.example to .env on the host before the first deploy."
+          if (-not (Test-Path "$env:COMPOSE_DIR/.env")) {
+            Write-Error "Missing $env:COMPOSE_DIR/.env. Copy .env.example to .env on the host before the first deploy."
             exit 1
           }
 
