@@ -86,7 +86,7 @@ public class SiteContentService
                     c.Value<decimal>("amount"),
                     c.Value<string>("status") ?? "Open",
                     c.Value<string>("description") ?? "",
-                    c.Value<IEnumerable<IPublishedContent>>("pdf")?.FirstOrDefault()?.Url()))
+                    c.FirstMedia("pdf")?.Url()))
                 .ToList();
     }
 }

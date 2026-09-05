@@ -18,8 +18,9 @@
   var finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
   /* ---- Smooth scroll (desktop only — touch scrolling stays native) ------ */
+  var lenis = null;
   if (window.Lenis && finePointer) {
-    var lenis = new Lenis({ duration: 1.05 });
+    lenis = new Lenis({ duration: 1.05 });
     lenis.on("scroll", ScrollTrigger.update);
     gsap.ticker.add(function (time) { lenis.raf(time * 1000); });
     gsap.ticker.lagSmoothing(0);
@@ -83,9 +84,11 @@
       xPercent: 0, autoAlpha: 1, ease: "none",
       scrollTrigger: { trigger: braceSection, start: "top 90%", end: "top 25%", scrub: true }
     });
-    gsap.to([braceL, braceR], {
-      yPercent: 18, ease: "none",
-      scrollTrigger: { trigger: braceSection, start: "top 80%", end: "bottom top", scrub: true }
+    // Parallax runs symmetrically around 0 so the braces sit exactly centred
+    // when the section itself is centred in the viewport.
+    gsap.fromTo([braceL, braceR], { yPercent: -10 }, {
+      yPercent: 10, ease: "none",
+      scrollTrigger: { trigger: braceSection, start: "top bottom", end: "bottom top", scrub: true }
     });
   }
 
@@ -122,7 +125,10 @@
         start: "top 62%",
         end: "bottom 38%",
         onEnter: function () { setStage(i); },
-        onEnterBack: function () { setStage(i); }
+        onEnterBack: function () { setStage(i); },
+        // Ranges of neighbouring steps overlap, so a step scrolled back out of
+        // the top must hand the stage back to its predecessor explicitly.
+        onLeaveBack: function () { if (i > 0) setStage(i - 1); }
       });
     });
     setStage(0);
@@ -133,6 +139,69 @@
         gsap.to(pulse, { opacity: 0.25, repeat: -1, yoyo: true, duration: 0.9, ease: "sine.inOut" });
       }
     }
+
+    /* Snap to the nearest step once scrolling settles, so a visitor never
+       parks halfway between two steps with the wireframe mid-transition.
+       Desktop only: that is where the sticky two-column layout lives. */
+    var desktop = window.matchMedia("(min-width: 64rem)");
+    var stepTargets = [];
+    var snapTimer = null;
+    var snapping = false;
+
+    var maxScroll = function () {
+      return Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    };
+
+    // Measured right before snapping, not on refresh: the header is taller
+    // while the page sits at the top, so positions taken at load are off by
+    // the shrink once the visitor has scrolled down.
+    var measureSteps = function () {
+      var scrollY = window.scrollY;
+      var limit = maxScroll();
+      stepTargets = Array.prototype.map.call(steps, function (s) {
+        var r = s.getBoundingClientRect();
+        // Scroll position at which this step is vertically centred.
+        return Math.min(limit, Math.round(scrollY + r.top + r.height / 2 - window.innerHeight / 2));
+      });
+    };
+
+    var scrollTo = function (y) {
+      snapping = true;
+      if (lenis) {
+        lenis.scrollTo(y, { duration: 0.7 });
+      } else {
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
+      // A wheel/touch during the snap cancels it without any callback, so
+      // release the guard on a timer rather than on completion.
+      setTimeout(function () { snapping = false; }, 800);
+    };
+
+    var snapToNearest = function () {
+      if (!desktop.matches || snapping) return;
+      measureSteps();
+      if (!stepTargets.length) return;
+      var y = window.scrollY;
+      // Only act while the visitor is actually "in" the steps: half a step
+      // before the first and after the last. Beyond that the page is theirs.
+      var slack = (stepTargets.length > 1 ? stepTargets[1] - stepTargets[0] : window.innerHeight * 0.5) / 2;
+      if (y < stepTargets[0] - slack || y > stepTargets[stepTargets.length - 1] + slack) return;
+      var nearest = stepTargets[0];
+      stepTargets.forEach(function (t) { if (Math.abs(t - y) < Math.abs(nearest - y)) nearest = t; });
+      if (Math.abs(nearest - y) > 4) scrollTo(nearest);
+    };
+
+    ScrollTrigger.create({
+      trigger: processSection,
+      start: "top bottom",
+      end: "bottom top",
+      onUpdate: function () {
+        clearTimeout(snapTimer);
+        snapTimer = setTimeout(snapToNearest, 160);
+      },
+      onLeave: function () { clearTimeout(snapTimer); },
+      onLeaveBack: function () { clearTimeout(snapTimer); }
+    });
   }
 
   /* ---- Magnetic buttons (fine pointers only) ---------------------------- */

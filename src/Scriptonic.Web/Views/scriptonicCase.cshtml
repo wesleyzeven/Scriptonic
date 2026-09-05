@@ -5,11 +5,28 @@
     ViewData["MetaDescription"] = Model.Value<string>("seoDescription") ?? Model.Value<string>("summary");
     string[] tags = (Model.Value<string>("tags") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
     string? projectUrl = Model.Value<string>("projectUrl");
+
+    // De voorbeeldfoto van de kaart wordt hier de grote kopfoto; extra foto's
+    // uit "Foto's" vormen de galerij (de kopfoto telt daar niet dubbel in mee).
+    IPublishedContent? hero = Model.FirstMedia("previewImage");
+    var gallery = Model.MediaItems("images").Where(m => hero is null || m.Id != hero.Id).ToList();
+    if (hero is null && gallery.Count > 0)
+    {
+        hero = gallery[0];
+        gallery.RemoveAt(0);
+    }
 }
 
 <section class="mx-auto max-w-3xl px-4 py-16">
-    <p class="braced font-brand text-sm font-bold text-steel-dark">case</p>
+    <p class="braced font-brand text-sm font-bold text-steel-dark">portfolio</p>
     <h1 class="mt-2 text-4xl">@Model.Name</h1>
+
+    @if (hero is not null)
+    {
+        <figure class="mt-8 overflow-hidden rounded-lg border border-line bg-white shadow-card">
+            <img src="@hero.Url()" alt="@Model.Name" class="aspect-16/10 w-full object-cover" />
+        </figure>
+    }
 
     <dl class="mt-6 grid grid-cols-2 gap-4 rounded-lg border border-line bg-white p-5 text-sm sm:grid-cols-4">
         <div>
@@ -38,6 +55,18 @@
     <div class="prose-block mt-6">
         <partial name="_Paragraphs" model="@(Model.Value<string>("bodyText"))" />
     </div>
+
+    @if (gallery.Count > 0)
+    {
+        <div class="mt-10 grid gap-4 sm:grid-cols-2">
+            @foreach (var image in gallery)
+            {
+                <figure class="overflow-hidden rounded-lg border border-line bg-white shadow-card">
+                    <img src="@image.Url()" alt="@(image.Name)" loading="lazy" class="aspect-16/10 w-full object-cover" />
+                </figure>
+            }
+        </div>
+    }
 
     @if (tags.Length > 0)
     {

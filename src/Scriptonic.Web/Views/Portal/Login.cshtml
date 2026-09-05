@@ -30,9 +30,23 @@
             <label class="label" for="p-email">E-mailadres</label>
             <input class="input" id="p-email" name="Email" type="email" value="@Model.Email" required autofocus autocomplete="username" />
         </div>
-        <div>
+        <div x-data="{ show: false }">
             <label class="label" for="p-password">Wachtwoord</label>
-            <input class="input" id="p-password" name="Password" type="password" required autocomplete="current-password" />
+            <div class="relative">
+                <input class="input pr-12" id="p-password" name="Password" type="password" x-bind:type="show ? 'text' : 'password'" required autocomplete="current-password" />
+                @* Oogje: toont het ingevulde wachtwoord zolang het is ingedrukt/aangevinkt. *@
+                <button type="button" @@click="show = !show"
+                        class="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-ink-soft transition hover:text-steel-dark"
+                        x-bind:aria-label="show ? 'Wachtwoord verbergen' : 'Wachtwoord tonen'" x-bind:aria-pressed="show.toString()" aria-label="Wachtwoord tonen">
+                    <svg x-show="!show" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.5 12s3.5-7 9.5-7 9.5 7 9.5 7-3.5 7-9.5 7-9.5-7-9.5-7z" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <svg x-show="show" x-cloak class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18M10.6 10.6a3 3 0 0 0 4.2 4.2M9.9 5.2A10 10 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-3.2 4.1M6.6 6.6C4 8.5 2.5 12 2.5 12s3.5 7 9.5 7a9.7 9.7 0 0 0 4.4-1" />
+                    </svg>
+                </button>
+            </div>
         </div>
         <button type="submit" class="btn-primary w-full">Inloggen</button>
         <p class="text-center text-xs text-ink-soft">

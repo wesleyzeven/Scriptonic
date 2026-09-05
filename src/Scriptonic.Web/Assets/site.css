@@ -83,6 +83,19 @@
     }
   }
 
+  /* Home hero: fills the viewport below the oversized header (5.5rem / 7rem,
+     see .site-header[data-top="true"] above), so nothing peeks out beneath it
+     before the visitor scrolls. svh ignores the mobile URL bar. */
+  .hero {
+    min-height: calc(100svh - 5.5rem);
+  }
+
+  @media (min-width: 48rem) {
+    .hero {
+      min-height: calc(100svh - 7rem);
+    }
+  }
+
   .btn-primary {
     @apply inline-flex items-center justify-center gap-2 rounded-md bg-steel-dark px-6 py-3 font-brand font-bold text-white transition hover:bg-steel-deep;
   }

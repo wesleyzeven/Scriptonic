@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using Umbraco.Cms.Core;
 using Umbraco.Cms.Core.Events;
 using Umbraco.Cms.Core.Models;
@@ -162,11 +162,12 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         IContentType? existing = _contentTypeService.Get(SiteAliases.Case);
         if (existing is not null)
         {
-            await EnsureCasePreviewImageAsync(existing);
+            await EnsureCaseMediaPropertiesAsync(existing);
             return existing;
         }
 
         IDataType casePreviewPicker = await RequireDataTypeAsync(Constants.PropertyEditors.Aliases.MediaPicker3, "Media Picker");
+        IDataType caseGalleryPicker = await EnsureMultipleImagePickerAsync();
         var type = await NewTypeAsync(SiteAliases.Case, "Case (portfolio item)", "icon-star color-orange", "inhoud", "Inhoud");
         await AddTextAsync(type, "client", "Opdrachtgever", 1);
         await AddTextAsync(type, "projectType", "Soort project", 2, description: "Bijv. Website, Game, Webshop.");
@@ -176,6 +177,7 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         await AddTextAsync(type, "bodyText", "Tekst", 6, area: true, description: "Alinea's scheiden met een lege regel.");
         await AddTextAsync(type, "tags", "Tags", 7, description: "Kommagescheiden, bijv. Umbraco, .NET, Unity.");
         AddProperty(type, casePreviewPicker, CasePreviewImageAlias, "Voorbeeldfoto", 8, CasePreviewImageDescription);
+        AddProperty(type, caseGalleryPicker, CaseImagesAlias, "Foto's", 9, CaseImagesDescription);
         await AddSeoGroupAsync(type);
         FinishType(type, template);
         await _contentTypeService.CreateAsync(type, Constants.Security.SuperUserKey);
@@ -184,40 +186,96 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
 
     private const string CasePreviewImageAlias = "previewImage";
     private const string CasePreviewImageDescription =
-        "Afbeelding op de portfolio-kaarten (schermafdruk of foto). Zonder afbeelding tonen we een neutrale placeholder.";
+        "Afbeelding op de portfolio-kaarten en bovenaan de casepagina (schermafdruk of foto). Zonder afbeelding tonen we op de kaarten een neutrale placeholder.";
+
+    private const string CaseImagesAlias = "images";
+    private const string CaseImagesDescription =
+        "Extra foto's of schermafdrukken voor de galerij op de casepagina (optioneel).";
 
     /// <summary>
-    /// Adds the portfolio preview image to a case type that was seeded before
-    /// this property existed, so sites from an earlier boot get it too.
+    /// Adds the media properties (preview image, gallery) to a case type that
+    /// was seeded before they existed, so sites from an earlier boot get them too.
     /// </summary>
-    private async Task EnsureCasePreviewImageAsync(IContentType caseType)
+    private async Task EnsureCaseMediaPropertiesAsync(IContentType caseType)
     {
-        if (caseType.PropertyTypes.Any(p => p.Alias == CasePreviewImageAlias))
+        bool changed = false;
+        string groupAlias = caseType.PropertyGroups.FirstOrDefault(g => g.Alias == "inhoud")?.Alias
+            ?? caseType.PropertyGroups.First().Alias!;
+
+        if (caseType.PropertyTypes.All(p => p.Alias != CasePreviewImageAlias))
+        {
+            IDataType mediaPicker = await RequireDataTypeAsync(Constants.PropertyEditors.Aliases.MediaPicker3, "Media Picker");
+            caseType.AddPropertyType(new PropertyType(_shortStringHelper, mediaPicker, CasePreviewImageAlias)
+            {
+                Name = "Voorbeeldfoto",
+                Description = CasePreviewImageDescription,
+                SortOrder = 8,
+            }, groupAlias);
+            changed = true;
+        }
+
+        if (caseType.PropertyTypes.All(p => p.Alias != CaseImagesAlias))
+        {
+            IDataType gallery = await EnsureMultipleImagePickerAsync();
+            caseType.AddPropertyType(new PropertyType(_shortStringHelper, gallery, CaseImagesAlias)
+            {
+                Name = "Foto's",
+                Description = CaseImagesDescription,
+                SortOrder = 9,
+            }, groupAlias);
+            changed = true;
+        }
+
+        if (!changed)
         {
             return;
         }
 
-        IDataType mediaPicker = await RequireDataTypeAsync(Constants.PropertyEditors.Aliases.MediaPicker3, "Media Picker");
-        string groupAlias = caseType.PropertyGroups.FirstOrDefault(g => g.Alias == "inhoud")?.Alias
-            ?? caseType.PropertyGroups.First().Alias!;
-
-        var property = new PropertyType(_shortStringHelper, mediaPicker, CasePreviewImageAlias)
-        {
-            Name = "Voorbeeldfoto",
-            Description = CasePreviewImageDescription,
-            SortOrder = 8,
-        };
-        caseType.AddPropertyType(property, groupAlias);
-
         var attempt = await _contentTypeService.UpdateAsync(caseType, Constants.Security.SuperUserKey);
         if (attempt.Success)
         {
-            _logger.LogInformation("Added {Property} to {Alias}", CasePreviewImageAlias, SiteAliases.Case);
+            _logger.LogInformation("Added media properties to {Alias}", SiteAliases.Case);
         }
         else
         {
-            _logger.LogWarning("Could not add {Property} to {Alias}: {Status}", CasePreviewImageAlias, SiteAliases.Case, attempt.Result);
+            _logger.LogWarning("Could not add media properties to {Alias}: {Status}", SiteAliases.Case, attempt.Result);
         }
+    }
+
+    /// <summary>
+    /// Umbraco ships a "Multiple Image Media Picker" data type; use that, and
+    /// only if it is missing create our own multi-select picker. A plain
+    /// fallback to the first Media Picker would silently yield a single-select
+    /// picker, which the gallery cannot work with.
+    /// </summary>
+    private async Task<IDataType> EnsureMultipleImagePickerAsync()
+    {
+        IEnumerable<IDataType> pickers = await _dataTypeService.GetByEditorAliasAsync(Constants.PropertyEditors.Aliases.MediaPicker3);
+        IDataType? existing = pickers.FirstOrDefault(d => d.Name == "Multiple Image Media Picker")
+            ?? pickers.FirstOrDefault(d => d.Name == "Multiple Media Picker")
+            ?? pickers.FirstOrDefault(d => d.Name == "Foto's (meerdere)");
+        if (existing is not null)
+        {
+            return existing;
+        }
+
+        if (!_propertyEditors.TryGet(Constants.PropertyEditors.Aliases.MediaPicker3, out IDataEditor? editor))
+        {
+            throw new InvalidOperationException("Media Picker property editor not found.");
+        }
+
+        var dataType = new DataType(editor, _configSerializer)
+        {
+            Name = "Foto's (meerdere)",
+            DatabaseType = ValueStorageType.Ntext,
+            ConfigurationData = new Dictionary<string, object>
+            {
+                ["multiple"] = true,
+                ["filter"] = Constants.Conventions.MediaTypes.Image,
+            },
+        };
+        var attempt = await _dataTypeService.CreateAsync(dataType, Constants.Security.SuperUserKey);
+        return attempt.Success ? attempt.Result : throw new InvalidOperationException("Failed to create multiple image picker data type.");
     }
 
     private async Task<IContentType> EnsureListTypeAsync(string alias, string name, string icon, ITemplate template, IContentType childType)
