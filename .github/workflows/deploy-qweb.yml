@@ -189,6 +189,15 @@ jobs:
             exit $LASTEXITCODE
           }
 
+          # Phase 3: bring the site back. The AppOffline rule only removes an
+          # App_Offline.htm it created itself, and ours from phase 1 was already
+          # there, so delete it explicitly.
+          & $msdeploy '-verb:delete' "-dest:contentPath=$env:MSDEPLOY_SITE/App_Offline.htm,publishSettings=$publishProfile" '-allowUntrusted'
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Removing App_Offline.htm failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+
       - name: Smoke check /health
         shell: pwsh
         run: |
