@@ -23,8 +23,16 @@ Portal specifics:
   under the hidden "Portaal" node, matched by `relationCode`.
 - The offerte doc type intentionally has **no template** (no public URL).
 
-Deploy: homelab pattern. Prod = main → port 8220 (scriptonic.local.io),
-acc = develop/acceptance → 8230 (scriptonic-acc.local.io) — 8200/8210 are
-taken by the Beszel/Scrutiny monitoring stack. Compose dirs under
-C:\DockerProjects\Scriptonic\. Planned: application portal ("sollicitatieportaal")
-as a later addition.
+Deploy:
+
+- **Production = Qweb** (Plesk/IIS on a shared Windows server, no Docker):
+  `deploy-qweb.yml` publishes self-contained win-x64 and pushes it with Web
+  Deploy to IIS site `scriptonic.nl`. Secrets live in `secrets.json` in the site
+  root (skipped by the sync); non-secret prod config is in
+  `src/Scriptonic.Web/web.config`. Details: `deploy/qweb/README.md`.
+- **Homelab (Linux, Docker) = staging/acceptance**: main → port 8220
+  (scriptonic.local.io), develop/acceptance → 8230 (scriptonic-acc.local.io);
+  8200/8210 are taken by the Beszel/Scrutiny monitoring stack. Compose dirs
+  under C:\DockerProjects\Scriptonic\.
+
+Planned: application portal ("sollicitatieportaal") as a later addition.

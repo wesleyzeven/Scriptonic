@@ -1,0 +1,165 @@
+name: Deploy Qweb (scriptonic.nl)
+
+# Builds a self-contained win-x64 publish of the site and pushes it with
+# Web Deploy (msdeploy) to the Plesk-hosted production server at Qweb.
+#
+# Server side (one-time):
+#   - Plesk > scriptonic.nl > Hosting Settings: "Web Deploy publishing" enabled.
+#   - secrets.json in the site root (template: deploy/qweb/secrets.example.json).
+# GitHub side (one-time):
+#   - Repository/environment secret QWEB_DEPLOY_PASSWORD = password of the
+#     Plesk system user (see deploy/qweb/README.md).
+#
+# Triggers:
+#   - push to main (every commit to main goes to production)
+#   - push of a v*.*.* tag (explicit release)
+#   - manual run via the Actions tab; tick "fresh_install" ONLY for the very
+#     first deploy over the old site: it also removes the old umbraco/Data,
+#     umbraco/Logs and wwwroot/media folders instead of preserving them.
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      fresh_install:
+        description: 'Wipe umbraco/Data, umbraco/Logs and wwwroot/media on the server (first deploy only!)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: scriptonic-qweb
+  cancel-in-progress: false
+
+env:
+  PROJECT: src/Scriptonic.Web/Scriptonic.Web.csproj
+  WEB_DIR: src/Scriptonic.Web
+  PUBLISH_DIR: ${{ github.workspace }}/publish
+  MSDEPLOY_SITE: scriptonic.nl
+  MSDEPLOY_URL: https://scriptonic.nl:8172/msdeploy.axd?site=scriptonic.nl
+  MSDEPLOY_USER: scriptonic
+  PUBLIC_URL: https://scriptonic.nl
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: ${{ env.WEB_DIR }}/package-lock.json
+
+      - name: Build Tailwind CSS
+        shell: pwsh
+        working-directory: ${{ env.WEB_DIR }}
+        run: |
+          npm ci --no-audit --no-fund
+          npm run build
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Compute release version
+        id: version
+        shell: pwsh
+        run: |
+          # Major.minor lives in /VERSION; patch is this workflow's run number.
+          $base = (Get-Content -Raw VERSION).Trim()
+          $appVersion = "$base.${{ github.run_number }}"
+          Write-Host "App version: $appVersion"
+          "version=$appVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Publish (self-contained win-x64)
+        shell: pwsh
+        run: |
+          dotnet publish $env:PROJECT `
+            -c Release `
+            -r win-x64 `
+            --self-contained true `
+            -o $env:PUBLISH_DIR
+
+      - name: Stamp version into web.config
+        shell: pwsh
+        run: |
+          $path = Join-Path $env:PUBLISH_DIR 'web.config'
+          (Get-Content -Raw $path).Replace('__APP_VERSION__', '${{ steps.version.outputs.version }}') |
+            Set-Content -Path $path -Encoding utf8 -NoNewline
+          Get-Content $path
+
+      - name: Deploy with Web Deploy
+        shell: pwsh
+        env:
+          MSDEPLOY_PASSWORD: ${{ secrets.QWEB_DEPLOY_PASSWORD }}
+          FRESH_INSTALL: ${{ github.event.inputs.fresh_install }}
+        run: |
+          if (-not $env:MSDEPLOY_PASSWORD) {
+            Write-Error "Secret QWEB_DEPLOY_PASSWORD is not set."
+            exit 1
+          }
+          $msdeploy = "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe"
+          if (-not (Test-Path $msdeploy)) {
+            Write-Error "msdeploy.exe not found on the runner."
+            exit 1
+          }
+
+          $msdeployArgs = @(
+            '-verb:sync',
+            "-source:contentPath=`"$env:PUBLISH_DIR`"",
+            "-dest:contentPath=`"$env:MSDEPLOY_SITE`",computerName=`"$env:MSDEPLOY_URL`",userName=`"$env:MSDEPLOY_USER`",password=`"$env:MSDEPLOY_PASSWORD`",authType=`"Basic`"",
+            '-allowUntrusted',
+            '-useCheckSum',
+            '-enableRule:AppOffline',
+            '-retryAttempts:5',
+            '-retryInterval:5000',
+            # Server-only secrets file, never part of the publish output.
+            '-skip:objectName=filePath,absolutePath=\secrets\.json$'
+          )
+
+          if ($env:FRESH_INSTALL -eq 'true') {
+            Write-Host "::warning::fresh_install: server-side umbraco/Data, umbraco/Logs and wwwroot/media will be removed."
+          } else {
+            # Runtime state that must survive deploys: SQLite databases + keys,
+            # logs and uploaded media.
+            $msdeployArgs += @(
+              '-skip:objectName=dirPath,absolutePath=\umbraco\Data$',
+              '-skip:objectName=dirPath,absolutePath=\umbraco\Logs$',
+              '-skip:objectName=dirPath,absolutePath=\wwwroot\media$'
+            )
+          }
+
+          & $msdeploy @msdeployArgs
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "msdeploy failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+
+      - name: Smoke check /health
+        shell: pwsh
+        run: |
+          # Cold start of a self-contained Umbraco on shared IIS can take a while.
+          $deadline = (Get-Date).AddMinutes(5)
+          do {
+            Start-Sleep -Seconds 10
+            try {
+              $response = Invoke-RestMethod -Uri "$env:PUBLIC_URL/health" -TimeoutSec 30
+              if ($response.status -eq 'ok') {
+                Write-Host "Healthy: version $($response.version)"
+                exit 0
+              }
+            } catch { Write-Host "Not ready yet: $($_.Exception.Message)" }
+          } until ((Get-Date) -gt $deadline)
+          Write-Error "$env:PUBLIC_URL/health did not report ok within 5 minutes."
+          exit 1

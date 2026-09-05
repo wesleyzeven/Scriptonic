@@ -43,14 +43,19 @@ Eerste boot: unattended install + idempotente seeding (documenttypes, templates,
 membertype, startcontent). Templates zijn build-time gecompileerd
 (ModelsBuilder `Nothing`) — views wijzig je in de repo, niet in de backoffice.
 
-## Deploy (homelab-patroon)
+## Deploy
 
-| Omgeving  | Branch             | Poort | Hostnaam                  |
-|-----------|--------------------|-------|---------------------------|
-| acceptance| `develop`/`acceptance` | 8230  | scriptonic-acc.local.io   |
-| production| `main` / `v*`-tag  | 8220  | scriptonic.local.io       |
+| Omgeving   | Branch                 | Waar                                                |
+|------------|------------------------|-----------------------------------------------------|
+| production | `main` / `v*`-tag      | Qweb (Plesk/IIS, Web Deploy) → scriptonic.nl        |
+| staging    | `main` / `v*`-tag      | homelab Docker, poort 8220, scriptonic.local.io     |
+| acceptance | `develop`/`acceptance` | homelab Docker, poort 8230, scriptonic-acc.local.io |
 
-GitHub Actions (self-hosted runner `homelab, windows`) bouwt de image en doet
+**Qweb (productie)**: `.github/workflows/deploy-qweb.yml` publiceert self-contained
+win-x64 en pusht met Web Deploy naar Plesk (geen Docker daar). Secrets staan in
+`secrets.json` in de site-root op de server. Setup en details: `deploy/qweb/README.md`.
+
+**Homelab (staging/acceptance)**: GitHub Actions (self-hosted runner `homelab, windows`) bouwt de image en doet
 `docker compose up -d` vanuit `C:\DockerProjects\Scriptonic\{acceptance,production}`.
 Zet daar eerst `.env` neer (zie `deploy/*/.env.example`).
 

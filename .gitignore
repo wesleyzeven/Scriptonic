@@ -27,3 +27,9 @@ node_modules/
 ## Local run logs
 out.log
 err.log
+
+## Qweb server secrets (lives only on the server)
+secrets.json
+
+## Playwright MCP session files
+.playwright-mcp/
