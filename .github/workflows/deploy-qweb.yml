@@ -127,7 +127,27 @@ jobs:
           </publishData>
           "@ | Set-Content -Path $publishProfile -Encoding utf8
 
-          # No spaces or quotes in any argument below (runner paths have none).
+          # Phase 1: take the running site offline. IIS keeps the loaded DLLs
+          # locked (deleting them fails as "access denied"), so drop
+          # app_offline.htm first and give the app pool time to shut down.
+          $offlineDir = Join-Path $env:RUNNER_TEMP 'offline'
+          New-Item -ItemType Directory -Force $offlineDir | Out-Null
+          $offlineHtml = '<!doctype html><html lang="nl"><head><meta charset="utf-8"><title>Scriptonic</title></head>' +
+            '<body style="font-family:sans-serif;text-align:center;padding:4rem"><h1>Even geduld</h1>' +
+            '<p>Scriptonic wordt bijgewerkt. Probeer het over een minuut opnieuw.</p></body></html>'
+          Set-Content -Path (Join-Path $offlineDir 'app_offline.htm') -Value $offlineHtml -Encoding utf8
+          & $msdeploy '-verb:sync' "-source:contentPath=$offlineDir" `
+            "-dest:contentPath=$env:MSDEPLOY_SITE,publishSettings=$publishProfile" `
+            '-allowUntrusted' '-enableRule:DoNotDeleteRule'
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Placing app_offline.htm failed with exit code $LASTEXITCODE"
+            exit $LASTEXITCODE
+          }
+          Write-Host "app_offline.htm placed; waiting for IIS to release file locks..."
+          Start-Sleep -Seconds 30
+
+          # Phase 2: full sync. No spaces or quotes in any argument below
+          # (runner paths have none).
           $msdeployArgs = @(
             '-verb:sync',
             "-source:contentPath=$env:PUBLISH_DIR",
