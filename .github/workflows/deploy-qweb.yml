@@ -115,17 +115,30 @@ jobs:
             exit 1
           }
 
+          # Credentials go through a .publishsettings file: keeps the password off
+          # the command line and avoids PowerShell re-quoting msdeploy arguments
+          # (msdeploy rejects arguments wrapped in extra quotes).
+          $publishProfile = Join-Path $env:RUNNER_TEMP 'qweb.publishsettings'
+          $pwdXml = [System.Security.SecurityElement]::Escape($env:MSDEPLOY_PASSWORD)
+          @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <publishData>
+            <publishProfile profileName="qweb" publishMethod="MSDeploy" publishUrl="$env:MSDEPLOY_URL" msdeploySite="$env:MSDEPLOY_SITE" userName="$env:MSDEPLOY_USER" userPWD="$pwdXml" destinationAppUrl="$env:PUBLIC_URL" msdeployAllowUntrustedCertificate="true" />
+          </publishData>
+          "@ | Set-Content -Path $publishProfile -Encoding utf8
+
+          # No spaces or quotes in any argument below (runner paths have none).
           $msdeployArgs = @(
             '-verb:sync',
-            "-source:contentPath=`"$env:PUBLISH_DIR`"",
-            "-dest:contentPath=`"$env:MSDEPLOY_SITE`",computerName=`"$env:MSDEPLOY_URL`",userName=`"$env:MSDEPLOY_USER`",password=`"$env:MSDEPLOY_PASSWORD`",authType=`"Basic`"",
+            "-source:contentPath=$env:PUBLISH_DIR",
+            "-dest:contentPath=$env:MSDEPLOY_SITE,publishSettings=$publishProfile",
             '-allowUntrusted',
             '-useCheckSum',
             '-enableRule:AppOffline',
             '-retryAttempts:5',
             '-retryInterval:5000',
             # Server-only secrets file, never part of the publish output.
-            '-skip:objectName=filePath,absolutePath=\secrets\.json$'
+            '-skip:objectName=filePath,absolutePath=\\secrets\.json$'
           )
 
           if ($env:FRESH_INSTALL -eq 'true') {
@@ -134,9 +147,9 @@ jobs:
             # Runtime state that must survive deploys: SQLite databases + keys,
             # logs and uploaded media.
             $msdeployArgs += @(
-              '-skip:objectName=dirPath,absolutePath=\umbraco\Data$',
-              '-skip:objectName=dirPath,absolutePath=\umbraco\Logs$',
-              '-skip:objectName=dirPath,absolutePath=\wwwroot\media$'
+              '-skip:objectName=dirPath,absolutePath=\\umbraco\\Data$',
+              '-skip:objectName=dirPath,absolutePath=\\umbraco\\Logs$',
+              '-skip:objectName=dirPath,absolutePath=\\wwwroot\\media$'
             )
           }
 
