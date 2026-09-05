@@ -91,6 +91,16 @@ jobs:
             --self-contained true `
             -o $env:PUBLISH_DIR
 
+      - name: Add runtime folders to publish output
+        shell: pwsh
+        run: |
+          # The publish output has no umbraco/ or wwwroot/media folder (they are
+          # created at runtime). Without them in the source, msdeploy tries to
+          # delete the whole server-side folders instead of skipping Data/Logs/media.
+          foreach ($dir in 'umbraco/Data', 'umbraco/Logs', 'wwwroot/media') {
+            New-Item -ItemType Directory -Force (Join-Path $env:PUBLISH_DIR $dir) | Out-Null
+          }
+
       - name: Stamp version into web.config
         shell: pwsh
         run: |
