@@ -2,7 +2,7 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = Model.Value<string>("seoTitle") is string st && !string.IsNullOrWhiteSpace(st) ? st : Model.Name;
-    ViewData["MetaDescription"] = Model.Value<string>("seoDescription") ?? Model.Value<string>("summary");
+    ViewData["MetaDescription"] = Seo.Description(Model, "seoDescription", "summary");
     string[] tags = (Model.Value<string>("tags") ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries);
     string? projectUrl = Model.Value<string>("projectUrl");
 
@@ -15,16 +15,31 @@
         hero = gallery[0];
         gallery.RemoveAt(0);
     }
+    if (hero is not null)
+    {
+        // Share previews (Open Graph) get a 1200x630 crop of the same photo.
+        ViewData["OgImage"] = hero.GetCropUrl(width: 1200, height: 630, quality: 85);
+    }
 }
 
 <section class="mx-auto max-w-3xl px-4 py-16">
-    <p class="braced font-brand text-sm font-bold text-steel-dark">portfolio</p>
+    <nav aria-label="Kruimelpad">
+        <a class="braced font-brand text-sm font-bold text-steel-dark hover:text-steel-deep" href="@(Model.Parent()?.Url() ?? "/portfolio/")">portfolio</a>
+    </nav>
     <h1 class="mt-2 text-4xl">@Model.Name</h1>
 
     @if (hero is not null)
     {
+        @* Largest element above the fold: eager + high priority, served as
+           responsive WebP crops instead of the original upload. *@
         <figure class="mt-8 overflow-hidden rounded-lg border border-line bg-white shadow-card">
-            <img src="@hero.Url()" alt="@Model.Name" class="aspect-16/10 w-full object-cover" />
+            <img src="@Seo.Crop(hero, 1280, 16, 10)"
+                 srcset="@Seo.Srcset(hero, 16, 10, 640, 960, 1280, 1600)"
+                 sizes="(min-width: 800px) 768px, 100vw"
+                 width="1280" height="800"
+                 alt="@(Model.Value<string>("projectType")) @Model.Name — schermafdruk"
+                 fetchpriority="high" decoding="async"
+                 class="aspect-16/10 w-full object-cover" />
         </figure>
     }
 
@@ -62,7 +77,12 @@
             @foreach (var image in gallery)
             {
                 <figure class="overflow-hidden rounded-lg border border-line bg-white shadow-card">
-                    <img src="@image.Url()" alt="@(image.Name)" loading="lazy" class="aspect-16/10 w-full object-cover" />
+                    <img src="@Seo.Crop(image, 800, 16, 10)"
+                         srcset="@Seo.Srcset(image, 16, 10, 480, 800, 1200)"
+                         sizes="(min-width: 640px) 376px, 100vw"
+                         width="800" height="500"
+                         alt="@Model.Name — @(image.Name)" loading="lazy" decoding="async"
+                         class="aspect-16/10 w-full object-cover" />
                 </figure>
             }
         </div>

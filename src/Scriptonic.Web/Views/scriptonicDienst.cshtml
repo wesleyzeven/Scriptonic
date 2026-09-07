@@ -1,15 +1,33 @@
 ﻿@inherits Umbraco.Cms.Web.Common.Views.UmbracoViewPage
+@using Microsoft.Extensions.Options
+@inject IOptions<SiteOptions> SiteOptionsAccessor
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = Model.Value<string>("seoTitle") is string st && !string.IsNullOrWhiteSpace(st) ? st : Model.Name;
-    ViewData["MetaDescription"] = Model.Value<string>("seoDescription") ?? Model.Value<string>("summary");
+    ViewData["MetaDescription"] = Seo.Description(Model, "seoDescription", "summary");
     string[] features = (Model.Value<string>("features") ?? "")
         .Replace("\r\n", "\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
+
+    // Structured data: this page describes one service offered by Scriptonic.
+    string baseUrl = SiteOptionsAccessor.Value.PublicBaseUrl.TrimEnd('/');
+    ViewData["JsonLd"] = new Dictionary<string, object?>
+    {
+        ["@type"] = "Service",
+        ["@id"] = baseUrl + Model.Url() + "#service",
+        ["name"] = Model.Name,
+        ["description"] = Model.Value<string>("summary"),
+        ["url"] = baseUrl + Model.Url(),
+        ["serviceType"] = Model.Name,
+        ["areaServed"] = new Dictionary<string, object?> { ["@type"] = "Country", ["name"] = "NL" },
+        ["provider"] = new Dictionary<string, object?> { ["@id"] = baseUrl + "/#organization" },
+    };
 }
 
 <section class="mx-auto max-w-3xl px-4 py-16">
-    <p class="braced font-brand text-sm font-bold text-steel-dark">diensten</p>
-    <h1 class="mt-2 text-4xl">@(Model.Value<string>("icon")) @Model.Name</h1>
+    <nav aria-label="Kruimelpad">
+        <a class="braced font-brand text-sm font-bold text-steel-dark hover:text-steel-deep" href="@(Model.Parent()?.Url() ?? "/diensten/")">diensten</a>
+    </nav>
+    <h1 class="mt-2 text-4xl"><span aria-hidden="true">@(Model.Value<string>("icon"))</span> @Model.Name</h1>
     <p class="mt-4 text-lg text-ink-soft">@(Model.Value<string>("summary"))</p>
 
     <div class="prose-block mt-8">

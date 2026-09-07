@@ -14,7 +14,8 @@
         @@scroll.window="atTop = grows && window.scrollY < (atTop ? 32 : 8)">
     <div class="site-header-bar mx-auto flex max-w-6xl items-center justify-between gap-4 px-4">
         <a href="/" class="flex items-center gap-3">
-            <img src="/img/logo.png" alt="Scriptonic" class="site-header-logo w-auto" />
+            @* Intrinsic size + fingerprinted URL: no layout shift, cacheable for a year. *@
+            <img src="/img/logo.png" alt="Scriptonic — naar de homepage" width="215" height="96" class="site-header-logo w-auto" asp-append-version="true" />
         </a>
 
         <nav class="hidden items-center gap-6 font-brand text-sm font-bold md:flex">

@@ -23,6 +23,18 @@ Portal specifics:
   under the hidden "Portaal" node, matched by `relationCode`.
 - The offerte doc type intentionally has **no template** (no public URL).
 
+SEO (helpers in `Site/Seo.cs`):
+
+- `_Layout.cshtml` emits robots/canonical/Open Graph and a JSON-LD graph
+  (Organization, WebSite, WebPage, BreadcrumbList from the content tree);
+  views add extras via `ViewData["JsonLd"]`, `["OgImage"]`, `["PageType"]`.
+- Every doc type has an SEO group: `seoTitle`, `seoDescription`, `seoNoIndex`
+  (noindex + out of the sitemap), `umbracoNaviHide` (menu only).
+- MVC pages (portal, admin) set `ViewData["NoIndex"]` in the controller.
+- The seeded "Pagina niet gevonden" node has a fixed key that
+  `Umbraco:CMS:Content:Error404Collection` in appsettings.json points to.
+- Media goes through `Seo.Crop`/`Seo.Srcset` (signed ImageSharp WebP crops).
+
 Deploy:
 
 - **Production = Qweb** (Plesk/IIS on a shared Windows server, no Docker):

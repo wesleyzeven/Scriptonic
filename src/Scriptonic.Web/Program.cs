@@ -80,6 +80,23 @@ using (IServiceScope scope = app.Services.CreateScope())
 string appVersion = builder.Configuration["Site:AppVersion"] ?? "dev";
 app.MapGet("/health", () => Results.Ok(new { status = "ok", version = appVersion }));
 
+// Site assets (css/js/img) are referenced with asp-append-version, so a
+// changed file always gets a new URL: fingerprinted responses can be cached
+// for a year, plain ones for a day. Umbraco media (/media, ImageSharp) is
+// deliberately left to Umbraco's own pipeline.
+app.UseWhen(
+    ctx => ctx.Request.Path.StartsWithSegments("/css")
+        || ctx.Request.Path.StartsWithSegments("/js")
+        || ctx.Request.Path.StartsWithSegments("/img")
+        || ctx.Request.Path == "/favicon.png",
+    branch => branch.UseStaticFiles(new StaticFileOptions
+    {
+        OnPrepareResponse = r => r.Context.Response.Headers.CacheControl =
+            r.Context.Request.Query.ContainsKey("v")
+                ? "public,max-age=31536000,immutable"
+                : "public,max-age=86400",
+    }));
+
 app.UseUmbraco()
     .WithMiddleware(u =>
     {

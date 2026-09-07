@@ -143,6 +143,7 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         IContentType? existing = _contentTypeService.Get(SiteAliases.Dienst);
         if (existing is not null)
         {
+            await EnsureSeoPropertiesAsync(existing);
             return existing;
         }
 
@@ -163,6 +164,7 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         if (existing is not null)
         {
             await EnsureCaseMediaPropertiesAsync(existing);
+            await EnsureSeoPropertiesAsync(existing);
             return existing;
         }
 
@@ -283,6 +285,7 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         IContentType? existing = _contentTypeService.Get(alias);
         if (existing is not null)
         {
+            await EnsureSeoPropertiesAsync(existing);
             return existing;
         }
 
@@ -300,6 +303,7 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         IContentType? existing = _contentTypeService.Get(SiteAliases.Page);
         if (existing is not null)
         {
+            await EnsureSeoPropertiesAsync(existing);
             return existing;
         }
 
@@ -317,6 +321,7 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         IContentType? existing = _contentTypeService.Get(SiteAliases.Contact);
         if (existing is not null)
         {
+            await EnsureSeoPropertiesAsync(existing);
             return existing;
         }
 
@@ -376,6 +381,7 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         IContentType? existing = _contentTypeService.Get(SiteAliases.Home);
         if (existing is not null)
         {
+            await EnsureSeoPropertiesAsync(existing);
             return existing;
         }
 
@@ -600,6 +606,21 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
             SavePublish(contact);
         }
 
+        // 404-pagina met vaste key; appsettings (Umbraco:CMS:Content:Error404Collection)
+        // verwijst ernaar. Noindex + uit het menu, zodat hij nergens opduikt.
+        if (_contentService.GetById(Seo.NotFoundPageKey) is null)
+        {
+            IContent notFound = _contentService.Create("Pagina niet gevonden", home.Id, SiteAliases.Page);
+            notFound.Key = Seo.NotFoundPageKey;
+            notFound.TemplateId = pageTemplate.Id;
+            notFound.SetValue("intro", "Deze pagina bestaat niet (meer) of is verhuisd.");
+            notFound.SetValue("bodyText", "Controleer het adres of ga terug naar de homepage. Kom je hier via een link op onze eigen site? Laat het ons even weten, dan repareren we hem.");
+            notFound.SetValue("seoTitle", "Pagina niet gevonden");
+            notFound.SetValue(Seo.NoIndexAlias, true);
+            notFound.SetValue("umbracoNaviHide", true);
+            SavePublish(notFound);
+        }
+
         // Portaal-root (verborgen, alleen offertes) + demo-offerte
         if (!Exists(SiteAliases.PortalRoot))
         {
@@ -690,7 +711,43 @@ public class SiteSeedHandler : INotificationAsyncHandler<UmbracoApplicationStart
         type.AddPropertyGroup("seo", "SEO");
         AddPropertyToGroup(type, textstring, "seoTitle", "SEO-titel", 1, "seo", "Overschrijft de paginatitel in zoekmachines.");
         AddPropertyToGroup(type, textarea, "seoDescription", "SEO-omschrijving", 2, "seo", "Max ± 155 tekens; getoond in zoekresultaten.");
-        AddPropertyToGroup(type, toggle, "umbracoNaviHide", "Verbergen in navigatie", 3, "seo", null);
+        AddPropertyToGroup(type, toggle, Seo.NoIndexAlias, "Niet indexeren", 3, "seo", SeoNoIndexDescription);
+        AddPropertyToGroup(type, toggle, "umbracoNaviHide", "Verbergen in navigatie", 4, "seo", "Alleen uit het menu; de pagina blijft bereikbaar en vindbaar.");
+    }
+
+    private const string SeoNoIndexDescription =
+        "Houdt de pagina uit zoekmachines (noindex) en uit de sitemap, bijv. voor een 404- of bedankpagina.";
+
+    /// <summary>
+    /// Adds SEO properties introduced after a type was first seeded, so sites
+    /// from an earlier boot get them too (same idea as the case media props).
+    /// </summary>
+    private async Task EnsureSeoPropertiesAsync(IContentType type)
+    {
+        if (type.PropertyTypes.Any(p => p.Alias == Seo.NoIndexAlias))
+        {
+            return;
+        }
+
+        string groupAlias = type.PropertyGroups.FirstOrDefault(g => g.Alias == "seo")?.Alias
+            ?? type.PropertyGroups.First().Alias!;
+        IDataType toggle = await RequireDataTypeAsync(Constants.PropertyEditors.Aliases.Boolean, "True/false");
+        type.AddPropertyType(new PropertyType(_shortStringHelper, toggle, Seo.NoIndexAlias)
+        {
+            Name = "Niet indexeren",
+            Description = SeoNoIndexDescription,
+            SortOrder = 3,
+        }, groupAlias);
+
+        var attempt = await _contentTypeService.UpdateAsync(type, Constants.Security.SuperUserKey);
+        if (attempt.Success)
+        {
+            _logger.LogInformation("Added {Property} to {Alias}", Seo.NoIndexAlias, type.Alias);
+        }
+        else
+        {
+            _logger.LogWarning("Could not add {Property} to {Alias}: {Status}", Seo.NoIndexAlias, type.Alias, attempt.Result);
+        }
     }
 
     private async Task AddTextAsync(ContentType type, string alias, string name, int sortOrder,

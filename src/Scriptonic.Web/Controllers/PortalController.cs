@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Scriptonic.Web.Site;
 using Scriptonic.Web.Site.Boekhouden;
 using Umbraco.Cms.Core.Models.PublishedContent;
@@ -59,6 +60,13 @@ public class PortalController : Controller
         _boekhouden = boekhouden;
         _siteContent = siteContent;
         _logger = logger;
+    }
+
+    /// <summary>Portal pages (login included) are private: never indexed, no canonical.</summary>
+    public override void OnActionExecuting(ActionExecutingContext context)
+    {
+        ViewData["NoIndex"] = true;
+        base.OnActionExecuting(context);
     }
 
     // ---- Auth -------------------------------------------------------------

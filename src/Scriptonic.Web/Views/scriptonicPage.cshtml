@@ -2,7 +2,9 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = Model.Value<string>("seoTitle") is string st && !string.IsNullOrWhiteSpace(st) ? st : Model.Name;
-    ViewData["MetaDescription"] = Model.Value<string>("seoDescription") ?? Model.Value<string>("intro");
+    ViewData["MetaDescription"] = Seo.Description(Model, "seoDescription", "intro");
+    // Also serves the seeded "Pagina niet gevonden" node (Error404Collection).
+    bool is404 = UmbracoContext?.PublishedRequest?.ResponseStatusCode == 404;
 }
 
 <section class="mx-auto max-w-3xl px-4 py-16">
@@ -12,4 +14,12 @@
     <div class="prose-block mt-8">
         <partial name="_Paragraphs" model="@(Model.Value<string>("bodyText"))" />
     </div>
+
+    @if (is404)
+    {
+        <div class="mt-10 flex flex-wrap gap-4">
+            <a href="/" class="btn-primary">Naar de homepage</a>
+            <a href="/contact/" class="font-brand font-bold text-steel-dark hover:text-steel-deep">Contact opnemen →</a>
+        </div>
+    }
 </section>

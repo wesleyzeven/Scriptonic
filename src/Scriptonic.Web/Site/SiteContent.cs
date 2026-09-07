@@ -62,6 +62,19 @@ public class SiteContentService
                 .ToList();
     }
 
+    /// <summary>
+    /// E-mail address and KvK number as maintained on the contact page, for
+    /// the footer, the contact page and the Organization structured data.
+    /// </summary>
+    public ContactInfo GetContactInfo()
+    {
+        using var ctx = _umbracoContextFactory.EnsureUmbracoContext();
+        IPublishedContent? contact = GetHome()?.Children()
+            .FirstOrDefault(c => c.ContentType.Alias == SiteAliases.Contact);
+        string? Text(string alias) => contact?.Value<string>(alias) is { } v && !string.IsNullOrWhiteSpace(v) ? v.Trim() : null;
+        return new ContactInfo(Text("email") ?? "info@scriptonic.nl", Text("kvk"));
+    }
+
     /// <summary>Offertes (CMS-managed quotes) for one e-Boekhouden relation code.</summary>
     public IReadOnlyList<OfferteInfo> GetOffertes(string relationCode)
     {
@@ -90,6 +103,9 @@ public class SiteContentService
                 .ToList();
     }
 }
+
+/// <summary>Company details from the contact page; KvK is null until an editor fills it in.</summary>
+public record ContactInfo(string Email, string? Kvk);
 
 /// <summary>Offerte data resolved inside an Umbraco context, safe to render anywhere.</summary>
 public record OfferteInfo(

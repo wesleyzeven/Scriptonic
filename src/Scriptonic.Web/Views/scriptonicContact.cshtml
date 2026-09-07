@@ -2,8 +2,10 @@
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = Model.Value<string>("seoTitle") is string st && !string.IsNullOrWhiteSpace(st) ? st : Model.Name;
-    ViewData["MetaDescription"] = Model.Value<string>("seoDescription") ?? Model.Value<string>("intro");
-    string email = Model.Value<string>("email") ?? "info@scriptonic.nl";
+    ViewData["MetaDescription"] = Seo.Description(Model, "seoDescription", "intro");
+    ViewData["PageType"] = "ContactPage";
+    string email = Seo.FirstText(Model, "email") ?? "info@scriptonic.nl";
+    string? kvk = Seo.FirstText(Model, "kvk");
 }
 
 <section class="mx-auto max-w-6xl px-4 py-16">
@@ -70,6 +72,10 @@
                 <h2 class="text-lg">Direct contact</h2>
                 <p class="mt-3 text-sm text-ink-soft">Liever mailen? Dat kan natuurlijk ook.</p>
                 <a class="mt-2 block font-brand font-bold text-steel-dark" href="mailto:@email">@email</a>
+                @if (kvk is not null)
+                {
+                    <p class="mt-3 text-sm text-ink-soft">KvK-nummer: <span class="font-brand">@kvk</span></p>
+                }
             </div>
             <div class="card">
                 <h2 class="text-lg">Al klant?</h2>

@@ -1,15 +1,134 @@
 @using Microsoft.Extensions.Options
+@using Umbraco.Cms.Core.Web
 @inject IOptions<SiteOptions> SiteOptionsAccessor
+@inject IUmbracoContextAccessor UmbracoContextAccessor
+@inject SiteContentService SiteContent
 @{
     SiteOptions site = SiteOptionsAccessor.Value;
+    ContactInfo contact = SiteContent.GetContactInfo();
     string baseUrl = site.PublicBaseUrl.TrimEnd('/');
+    const string defaultDescription = "Scriptonic bouwt moderne websites, webapplicaties en games. Van ontwerp tot hosting en beheer — software met karakter.";
     string title = ViewData["Title"] is string t && !string.IsNullOrEmpty(t)
         ? $"{t} — Scriptonic"
         : "Scriptonic — websites, games & maatwerk software";
     string metaDescription = ViewData["MetaDescription"] is string md && !string.IsNullOrWhiteSpace(md)
-        ? md
-        : "Scriptonic bouwt moderne websites, webapplicaties en games. Van ontwerp tot hosting en beheer — software met karakter.";
-    string canonicalPath = Context.Request.Path.HasValue ? Context.Request.Path.Value! : "/";
+        ? md.Trim()
+        : defaultDescription;
+
+    // The content node behind this request; null on the MVC portal/admin pages.
+    IPublishedContent? page = UmbracoContextAccessor.TryGetUmbracoContext(out IUmbracoContext? umbracoContext)
+        ? umbracoContext.PublishedRequest?.PublishedContent
+        : null;
+    bool is404 = umbracoContext?.PublishedRequest?.ResponseStatusCode == 404;
+    bool noIndex = ViewData["NoIndex"] is true || is404 || page?.Value<bool>(Seo.NoIndexAlias) == true;
+
+    // Canonical: Umbraco's own URL for content nodes (lower-case, trailing
+    // slash) so /diensten and /diensten/ resolve to one address; the request
+    // path for the MVC pages. Query strings never make it in.
+    string canonicalPath = page?.Url() ?? (Context.Request.Path.HasValue ? Context.Request.Path.Value! : "/");
+    string canonicalUrl = baseUrl + canonicalPath;
+
+    string ogImage = ViewData["OgImage"] is string oi && !string.IsNullOrEmpty(oi)
+        ? (oi.StartsWith("http", StringComparison.OrdinalIgnoreCase) ? oi : baseUrl + oi)
+        : baseUrl + "/img/og-default.png";
+
+    // ---- JSON-LD graph: organisation + website on every page, the page
+    // itself, breadcrumbs for anything below home, plus whatever the view
+    // adds via ViewData["JsonLd"] (one object or a list). ----
+    string orgId = baseUrl + "/#organization";
+    string siteId = baseUrl + "/#website";
+    var graph = new List<object>
+    {
+        new Dictionary<string, object?>
+        {
+            ["@type"] = "Organization",
+            ["@id"] = orgId,
+            ["name"] = site.SiteName,
+            ["url"] = baseUrl + "/",
+            ["logo"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "ImageObject",
+                ["url"] = baseUrl + "/img/logo-mark.png",
+                ["width"] = 192,
+                ["height"] = 192,
+            },
+            ["image"] = baseUrl + "/img/og-default.png",
+            ["email"] = contact.Email,
+            ["description"] = defaultDescription,
+            ["address"] = new Dictionary<string, object?> { ["@type"] = "PostalAddress", ["addressCountry"] = "NL" },
+            ["contactPoint"] = new Dictionary<string, object?>
+            {
+                ["@type"] = "ContactPoint",
+                ["email"] = contact.Email,
+                ["contactType"] = "customer service",
+                ["availableLanguage"] = new[] { "nl" },
+            },
+        },
+        new Dictionary<string, object?>
+        {
+            ["@type"] = "WebSite",
+            ["@id"] = siteId,
+            ["url"] = baseUrl + "/",
+            ["name"] = site.SiteName,
+            ["inLanguage"] = "nl-NL",
+            ["publisher"] = new Dictionary<string, object?> { ["@id"] = orgId },
+        },
+    };
+    if (contact.Kvk is not null)
+    {
+        // Chamber of Commerce registration; schema.org has no KvK field, so a named identifier.
+        ((Dictionary<string, object?>)graph[0])["identifier"] = new Dictionary<string, object?>
+        {
+            ["@type"] = "PropertyValue",
+            ["propertyID"] = "KvK",
+            ["value"] = contact.Kvk,
+        };
+    }
+
+    if (!noIndex)
+    {
+        List<IPublishedContent> trail = page is { Level: > 1 }
+            ? page.AncestorsOrSelf().OrderBy(c => c.Level).ToList()
+            : [];
+        var webPage = new Dictionary<string, object?>
+        {
+            ["@type"] = ViewData["PageType"] as string ?? "WebPage",
+            ["@id"] = canonicalUrl,
+            ["url"] = canonicalUrl,
+            ["name"] = title,
+            ["description"] = metaDescription,
+            ["inLanguage"] = "nl-NL",
+            ["isPartOf"] = new Dictionary<string, object?> { ["@id"] = siteId },
+            ["primaryImageOfPage"] = ogImage,
+        };
+        if (trail.Count > 0)
+        {
+            webPage["breadcrumb"] = new Dictionary<string, object?> { ["@id"] = canonicalUrl + "#breadcrumb" };
+            graph.Add(new Dictionary<string, object?>
+            {
+                ["@type"] = "BreadcrumbList",
+                ["@id"] = canonicalUrl + "#breadcrumb",
+                ["itemListElement"] = trail.Select((c, i) => new Dictionary<string, object?>
+                {
+                    ["@type"] = "ListItem",
+                    ["position"] = i + 1,
+                    ["name"] = c.Level == 1 ? "Home" : c.Name,
+                    ["item"] = baseUrl + c.Url(),
+                }).ToList(),
+            });
+        }
+        graph.Add(webPage);
+        switch (ViewData["JsonLd"])
+        {
+            case IEnumerable<object> extras:
+                graph.AddRange(extras);
+                break;
+            case { } extra:
+                graph.Add(extra);
+                break;
+        }
+    }
+    IHtmlContent jsonLd = Seo.JsonLd(new Dictionary<string, object?> { ["@context"] = "https://schema.org", ["@graph"] = graph });
 }
 <!DOCTYPE html>
 <html lang="nl" class="h-full">
@@ -18,8 +137,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@title</title>
     <meta name="description" content="@metaDescription" />
-    <link rel="canonical" href="@(baseUrl + canonicalPath)" />
+    @if (noIndex)
+    {
+        <meta name="robots" content="noindex, nofollow" />
+    }
+    else
+    {
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+        <link rel="canonical" href="@canonicalUrl" />
+    }
     <link rel="icon" href="/favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/img/logo-mark.png" />
+    <meta name="theme-color" content="#fafaf8" />
     @* asp-append-version stamps a content hash on the URL so browser/proxy
        caches can never pair stale CSS or JS with fresh markup. *@
     <link rel="stylesheet" href="/css/site.css" asp-append-version="true" />
@@ -30,27 +159,25 @@
     <script defer src="/js/motion.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
 
-    <meta property="og:site_name" content="Scriptonic" />
+    <meta property="og:site_name" content="@site.SiteName" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="@title" />
     <meta property="og:description" content="@metaDescription" />
-    <meta property="og:url" content="@(baseUrl + canonicalPath)" />
-    <meta property="og:image" content="@(baseUrl)/img/logo-mark.png" />
-    <meta property="og:locale" content="nl_NL" />
-    <meta name="twitter:card" content="summary" />
-
-    <script type="application/ld+json">
+    <meta property="og:url" content="@canonicalUrl" />
+    <meta property="og:image" content="@ogImage" />
+    @if (ViewData["OgImage"] is null)
     {
-      "@@context": "https://schema.org",
-      "@@type": "Organization",
-      "name": "Scriptonic",
-      "url": "@baseUrl",
-      "logo": "@(baseUrl)/img/logo-mark.png",
-      "email": "info@scriptonic.nl",
-      "description": "Scriptonic bouwt websites, webapplicaties en games.",
-      "address": { "@@type": "PostalAddress", "addressCountry": "NL" }
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="Scriptonic — websites, games & maatwerk" />
     }
-    </script>
+    <meta property="og:locale" content="nl_NL" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="@title" />
+    <meta name="twitter:description" content="@metaDescription" />
+    <meta name="twitter:image" content="@ogImage" />
+
+    @jsonLd
 
     @if (!string.IsNullOrEmpty(site.AnalyticsScriptUrl))
     {
@@ -68,10 +195,10 @@
         <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-3">
             <div>
                 @* White-ink variant of the logo; the regular one is near-black and would disappear here. *@
-                <img src="/img/logo-white.png" alt="Scriptonic" class="h-10 w-auto" />
+                <img src="/img/logo-white.png" alt="Scriptonic" width="215" height="96" loading="lazy" class="h-10 w-auto" asp-append-version="true" />
                 <p class="mt-4 text-sm text-white/70">Websites, games &amp; maatwerk software.<br />Gebouwd, gehost en beheerd door één team.</p>
             </div>
-            <div class="text-sm">
+            <nav class="text-sm" aria-label="Footer">
                 <p class="braced font-brand font-bold">menu</p>
                 <ul class="mt-3 space-y-2 text-white/70">
                     <li><a class="hover:text-white" href="/diensten/">Diensten</a></li>
@@ -79,17 +206,17 @@
                     <li><a class="hover:text-white" href="/over-ons/">Over ons</a></li>
                     <li><a class="hover:text-white" href="/contact/">Contact</a></li>
                 </ul>
-            </div>
+            </nav>
             <div class="text-sm">
                 <p class="braced font-brand font-bold">klanten</p>
                 <ul class="mt-3 space-y-2 text-white/70">
                     <li><a class="hover:text-white" href="/portaal">Klantportaal — facturen &amp; offertes</a></li>
-                    <li><a class="hover:text-white" href="mailto:info@scriptonic.nl">info@scriptonic.nl</a></li>
+                    <li><a class="hover:text-white" href="mailto:@contact.Email">@contact.Email</a></li>
                 </ul>
             </div>
         </div>
         <div class="border-t border-white/10 py-4 text-center font-brand text-xs text-white/50">
-            &copy; @DateTime.Now.Year Scriptonic · KvK · Nederland
+            &copy; @DateTime.Now.Year Scriptonic@(contact.Kvk is not null ? $" · KvK {contact.Kvk}" : "") · Nederland
         </div>
     </footer>
 </body>

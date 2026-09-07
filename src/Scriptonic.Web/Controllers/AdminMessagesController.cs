@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Scriptonic.Web.Site;
@@ -20,6 +21,13 @@ public class AdminMessagesController : Controller
     {
         _db = db;
         _options = options.Value;
+    }
+
+    /// <summary>Admin read-out is private: never indexed, no canonical.</summary>
+    public override void OnActionExecuting(ActionExecutingContext context)
+    {
+        ViewData["NoIndex"] = true;
+        base.OnActionExecuting(context);
     }
 
     private bool KeyValid(string? key)

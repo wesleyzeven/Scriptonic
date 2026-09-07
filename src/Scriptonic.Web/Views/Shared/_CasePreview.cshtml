@@ -3,12 +3,18 @@
    afbeelding heeft gekozen tonen we een merkgebonden placeholder in plaats van
    een gat in de kaart. Hoort binnen een element met class "card group". *@
 @{
-    string? previewUrl = Model.FirstMedia("previewImage")?.Url();
+    IPublishedContent? preview = Model.FirstMedia("previewImage");
 }
 <div class="-mx-6 -mt-6 mb-5 overflow-hidden rounded-t-lg border-b border-line">
-    @if (!string.IsNullOrEmpty(previewUrl))
+    @if (preview is not null)
     {
-        <img src="@previewUrl" alt="@Model.Name" loading="lazy"
+        @* Cards are ~370px wide on desktop; serve WebP crops sized for that
+           (and 2x screens) rather than the full upload. *@
+        <img src="@Seo.Crop(preview, 800, 16, 10)"
+             srcset="@Seo.Srcset(preview, 16, 10, 480, 800, 1200)"
+             sizes="(min-width: 1024px) 370px, (min-width: 768px) 50vw, 100vw"
+             width="800" height="500"
+             alt="@(Model.Value<string>("projectType")) @Model.Name" loading="lazy" decoding="async"
              class="aspect-16/10 w-full object-cover transition duration-300 group-hover:scale-105" />
     }
     else
