@@ -2,7 +2,7 @@ name: Deploy Acceptance
 
 # Builds the Scriptonic image and (re)deploys the acceptance stack on the
 # homelab. Runs on a self-hosted runner that has Docker available locally and
-# can write to C:/DockerProjects/Scriptonic/acceptance.
+# can write to /opt/DockerProjects/Scriptonic/acceptance.
 #
 # The runner must be registered in the repo with the labels:
 #   self-hosted, homelab, windows
@@ -19,12 +19,12 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  COMPOSE_DIR: C:/DockerProjects/Scriptonic/acceptance
+  COMPOSE_DIR: /opt/DockerProjects/Scriptonic/acceptance
   IMAGE_TAG: acceptance
 
 jobs:
   build-and-deploy:
-    runs-on: [self-hosted, homelab, windows]
+    runs-on: [self-hosted, homelab, linux]
     timeout-minutes: 60
 
     steps:
@@ -32,7 +32,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Show docker version
-        shell: powershell
+        shell: pwsh
         run: |
           docker version
           docker compose version
@@ -49,7 +49,7 @@ jobs:
           "version=$appVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Build web image
-        shell: powershell
+        shell: pwsh
         run: |
           docker build `
             -f src/Scriptonic.Web/Dockerfile `
@@ -59,7 +59,7 @@ jobs:
             .
 
       - name: Verify .env exists on host
-        shell: powershell
+        shell: pwsh
         run: |
           if (-not (Test-Path "$env:COMPOSE_DIR/.env")) {
             Write-Error "Missing $env:COMPOSE_DIR/.env. Copy .env.example to .env on the host before the first deploy."
@@ -67,7 +67,7 @@ jobs:
           }
 
       - name: Deploy stack
-        shell: powershell
+        shell: pwsh
         working-directory: ${{ env.COMPOSE_DIR }}
         run: |
           docker compose up -d --remove-orphans
@@ -90,11 +90,11 @@ jobs:
           exit 1
 
       - name: Show running containers
-        shell: powershell
+        shell: pwsh
         working-directory: ${{ env.COMPOSE_DIR }}
         run: docker compose ps
 
       - name: Prune old image revisions
-        shell: powershell
+        shell: pwsh
         run: |
           docker image prune -f --filter "label!=keep"
